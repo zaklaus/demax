@@ -27,7 +27,7 @@ namespace Demax
 		Camera mainCamera;
 		DownFall df = new DownFall();
 
-		bool updated, loaded = false;
+		bool updated, onDemand, loaded = false;
 		float time = 0f;
 		public float deltaTime, lastTime = 0.0f;
 
@@ -43,7 +43,7 @@ namespace Demax
 		}
 
 		Dictionary<string, CShaderProgram> shaders = new Dictionary<string, CShaderProgram>();
-		Dictionary<string, int> textures = new Dictionary<string, int>();
+		public Dictionary<string, int> textures = new Dictionary<string, int>();
 
 		string activeShader = "default";
 
@@ -59,6 +59,7 @@ namespace Demax
 		void initTest()
 		{
 			GL.GenBuffers(1, out ibo_elements);
+			CCore.GetCore ().MainCamera.Move (0, 10f, 0);
 
 			shaders.Add("default", new CShaderProgram("vs.glsl", "fs.glsl", true));
 			shaders.Add("textured", new CShaderProgram("vs_tex.glsl", "fs_tex.glsl", true));
@@ -70,92 +71,35 @@ namespace Demax
 			cubes.Transform.Position = new Vector3 (0, -6, -20);
 			cubes.AddScript ("cubes.py");
 
-			loadImage (Path.Combine ("Textures", "img01.jpg"));
-			loadImage (Path.Combine ("Textures", "img02.jpg"));
-			loadImage (Path.Combine ("Textures", "img03.jpg"));
-
-			Random rand = new Random ();
-
-			for (int i = 0; i < 100; i++) {
-				TexturedCube fall = new TexturedCube(cubes);
-				fall.Position = new Vector3 ((float)rand.NextDouble()*50f - 25f, (float)rand.NextDouble()*80f + 5f, (float)rand.NextDouble()*50f - 25f);
-				fall.TextureID = (rand.Next(0,100) > 50) ? textures ["img02.jpg"] : textures ["img01.jpg"];
-				fall.Scale = new Vector3 (1f, 1f, 1f);
-				fall.AddRigidbody ();
-				cubes.AddModel (fall);
-			}
-
-			TexturedCube floor = new TexturedCube(cubes);
-			floor.Position = new Vector3 (0, 0, 0);
-			floor.Scale = new Vector3 (100, 1, 100);
-			floor.TextureID = textures ["img03.jpg"];
-			floor.isStatic = true;
-			floor.AddRigidbody ();
-			floor.body.AffectedByGravity = false;
-			floor.body.IsStatic = true;
-			cubes.AddModel (floor);
+//			loadImage (Path.Combine ("Textures", "img01.jpg"));
+//			loadImage (Path.Combine ("Textures", "img02.jpg"));
+//			loadImage (Path.Combine ("Textures", "img03.jpg"));
+//
+//			Random rand = new Random ();
+//
+//			for (int i = 0; i < 30; i++) {
+//				TexturedCube fall = new TexturedCube(cubes);
+//				fall.Position = new Vector3 ((float)rand.NextDouble()*50f - 25f, (float)rand.NextDouble()*80f + 5f, (float)rand.NextDouble()*50f - 25f);
+//				fall.TextureID = (rand.Next(0,100) > 50) ? textures ["img02.jpg"] : textures ["img01.jpg"];
+//				fall.Scale = new Vector3 (5f, 5f, 5f);
+//				fall.AddRigidbody ();
+//				cubes.AddModel (fall);
+//			}
+//
+//			TexturedCube floor = new TexturedCube(cubes);
+//			floor.Position = new Vector3 (0, 0, 0);
+//			floor.Scale = new Vector3 (100, 1, 100);
+//			floor.TextureID = textures ["img03.jpg"];
+//			floor.isStatic = true;
+//			floor.AddRigidbody ();
+//			floor.body.AffectedByGravity = false;
+//			floor.body.IsStatic = true;
+//			cubes.AddModel (floor);
 		}
 
 
 		void updateTest()
 		{
-			
-		}
-
-		/// <summary>
-		/// Initializes game renderer. (OpenGL)
-		/// </summary>
-		public CRenderer ()
-		{
-			core = CCore.GetCore ();
-			gameRenderer = core.GameRenderer;
-			mainCamera = core.MainCamera;
-
-
-			gameRenderer.Load += OnLoad;
-			gameRenderer.Resize += OnResize;
-			gameRenderer.UpdateFrame += OnUpdateFrame;
-			gameRenderer.RenderFrame += OnRenderFrame;
-			gameRenderer.FocusedChanged += (object sender, EventArgs e) => { core.InputManager.Focused = !core.InputManager.Focused; };
-
-			gameRenderer.KeyDown += core.InputManager.OnKeyDown;
-			gameRenderer.KeyUp += core.InputManager.OnKeyUp;
-			gameRenderer.KeyPress += core.InputManager.OnKeyPress;
-
-			gameRenderer.Run (60.0f);
-		}
-		static class RequiredFeatures
-		{
-			public static readonly Version FramebufferObject = new Version(3, 0);
-		}
-		void OnLoad(object sender, EventArgs e)
-		{
-			gameRenderer.VSync = VSyncMode.On;
-			GL.Enable (EnableCap.DepthTest);
-			GL.Enable (EnableCap.CullFace);
-
-			Dictionary<string, bool> extensions =
-				new Dictionary<string, bool>();
-			int count = GL.GetInteger(GetPName.NumExtensions);
-			for (int i = 0; i < count; i++)
-			{
-				string extension = GL.GetString(StringNameIndexed.Extensions, i);
-				extensions.Add(extension, true);
-			}
-
-			if (extensions.ContainsKey("ARB_fragment_program"))
-			{
-				Console.WriteLine("Sorry, Your GPU is not supported!");
-				core.GameRenderer.Close ();
-				Console.ReadKey();
-				return;
-			}
-
-
-			initTest ();
-			/* TEST CODE */
-
-			/* TEST CODE */
 
 			List<Vector3> verts = new List<Vector3>();
 			List<int> inds = new List<int>();
@@ -219,6 +163,70 @@ namespace Demax
 
 			GL.ClearColor (Color.CornflowerBlue);
 			GL.PointSize (5f);
+		}
+
+		/// <summary>
+		/// Flush this instance.
+		/// </summary>
+		public void Flush()
+		{
+			updateTest ();
+		}
+
+		/// <summary>
+		/// Initializes game renderer. (OpenGL)
+		/// </summary>
+		public CRenderer ()
+		{
+			core = CCore.GetCore ();
+			gameRenderer = core.GameRenderer;
+			mainCamera = core.MainCamera;
+
+
+			gameRenderer.Load += OnLoad;
+			gameRenderer.Resize += OnResize;
+			gameRenderer.UpdateFrame += OnUpdateFrame;
+			gameRenderer.RenderFrame += OnRenderFrame;
+			gameRenderer.FocusedChanged += (object sender, EventArgs e) => { core.InputManager.Focused = !core.InputManager.Focused; };
+
+			gameRenderer.KeyDown += core.InputManager.OnKeyDown;
+			gameRenderer.KeyUp += core.InputManager.OnKeyUp;
+			gameRenderer.KeyPress += core.InputManager.OnKeyPress;
+		}
+		static class RequiredFeatures
+		{
+			public static readonly Version FramebufferObject = new Version(3, 0);
+		}
+		void OnLoad(object sender, EventArgs e)
+		{
+			gameRenderer.VSync = VSyncMode.On;
+			GL.Enable (EnableCap.DepthTest);
+			GL.Enable (EnableCap.CullFace);
+
+			Dictionary<string, bool> extensions =
+				new Dictionary<string, bool>();
+			int count = GL.GetInteger(GetPName.NumExtensions);
+			for (int i = 0; i < count; i++)
+			{
+				string extension = GL.GetString(StringNameIndexed.Extensions, i);
+				extensions.Add(extension, true);
+			}
+
+			if (extensions.ContainsKey("ARB_fragment_program"))
+			{
+				Console.WriteLine("Sorry, Your GPU is not supported!");
+				core.GameRenderer.Close ();
+				Console.ReadKey();
+				return;
+			}
+
+
+			initTest ();
+			/* TEST CODE */
+
+			/* TEST CODE */
+
+			updateTest ();
 
 			loaded = true;
 		}
@@ -227,6 +235,15 @@ namespace Demax
 		{
 			GL.Viewport (gameRenderer.ClientRectangle.X, gameRenderer.ClientRectangle.Y, gameRenderer.ClientRectangle.Width, gameRenderer.ClientRectangle.Height);
 
+		}
+
+		/// <summary>
+		/// Sets the on demand alloc.
+		/// </summary>
+		/// <param name="state">If set to <c>true</c> state.</param>
+		public void SetOnDemandAlloc(bool state)
+		{
+			this.onDemand = state;
 		}
 
 		void OnUpdateFrame(object sender, FrameEventArgs e)
@@ -249,7 +266,8 @@ namespace Demax
 
 			core.InputManager.TickCursor ();
 
-			updateTest ();
+			if(onDemand)
+				updateTest ();
 
 
 			// Modelview Buffer
@@ -326,43 +344,7 @@ namespace Demax
 			}
 		}
 
-		int loadImage(Bitmap image)
-		{
-			int texID = GL.GenTexture();
 
-			GL.BindTexture(TextureTarget.Texture2D, texID);
-			BitmapData data = image.LockBits(new System.Drawing.Rectangle(0, 0, image.Width, image.Height),
-				ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
-			GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0,
-				OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
-
-			image.UnlockBits(data);
-
-			GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-
-			return texID;
-		}
-
-		/// <summary>
-		/// Loads the image.
-		/// </summary>
-		/// <returns>The image.</returns>
-		/// <param name="filename">Filename.</param>
-		public int loadImage(string filename)
-		{
-			try
-			{
-				Bitmap file = new Bitmap(filename);
-				int id = loadImage(file);
-				textures.Add(Path.GetFileName(filename),id);
-				return id;
-			}
-			catch
-			{
-				return -1;
-			}
-		}
 
 		private JVector M2V(JMatrix wantedOrientation)
 		{

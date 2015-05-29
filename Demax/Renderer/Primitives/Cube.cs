@@ -92,10 +92,7 @@ namespace Demax
 			};
 		}
 
-		public override void CalculateModelMatrix()
-		{ 
-			ModelMatrix = Matrix4.Scale(Scale) * Rotation * Matrix4.CreateTranslation(Position + base.me.RecursiveTransform().Position);
-		}
+
 
 
 	}

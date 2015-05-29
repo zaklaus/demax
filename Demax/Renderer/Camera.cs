@@ -30,8 +30,6 @@ namespace Demax
 		{
 		}
 
-		public RigidBody body;
-
 		/// <summary>
 		/// The orientation.
 		/// </summary>
@@ -62,6 +60,9 @@ namespace Demax
 			return Matrix4.LookAt(Position, Position + lookat, Vector3.UnitY);
 		}
 
+		/// <summary>
+		/// Updates the camera.
+		/// </summary>
 		public void UpdateCamera()
 		{
 			//Position = new Vector3 (body.Position.X, body.Position.Y, body.Position.Z);
@@ -89,7 +90,8 @@ namespace Demax
 
 			Position += offset;
 
-			//body.Position = new JVector(Position.X+tPosition.X,Position.Y+tPosition.Y,Position.Z+tPosition.Z);
+
+			//5dy.Position = new JVector(Position.X+tPosition.X,Position.Y+tPosition.Y,Position.Z+tPosition.Z);
 			//body.AddForce(new JVector(offset.X,offset.Y,offset.Z));
 		}
 

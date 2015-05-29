@@ -11,6 +11,7 @@ using Jitter;
 using Jitter.DataStructures;
 using Jitter.Dynamics;
 using Jitter.LinearMath;
+using System.Drawing.Imaging;
 
 namespace Demax
 {
@@ -37,8 +38,58 @@ namespace Demax
 		public Volume(CEntity x)
 		{
 			me = x;
-			//AddRigidbody ();
+
+			x.game.GetCell().Flush ();
 		}
+
+		public void LoadTexture(string file)
+		{
+			try {
+				this.TextureID = this.loadImage (file);	
+			} catch (Exception ex) {
+				Console.WriteLine ("IO Error: "+ ex.ToString ());
+			}
+
+		}
+
+		int loadImage(Bitmap image)
+		{
+			int texID = GL.GenTexture();
+
+			GL.BindTexture(TextureTarget.Texture2D, texID);
+			BitmapData data = image.LockBits(new System.Drawing.Rectangle(0, 0, image.Width, image.Height),
+				ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+			GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0,
+				OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+
+			image.UnlockBits(data);
+
+			GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+
+			return texID;
+		}
+
+		/// <summary>
+		/// Loads the image.
+		/// </summary>
+		/// <returns>The image.</returns>
+		/// <param name="filename">Filename.</param>
+		public int loadImage(string filename)
+		{
+			try
+			{
+				Bitmap file = new Bitmap(filename);
+				int id = loadImage(file);
+				return id;
+			}
+			catch
+			{
+				return -1;
+			}
+		}
+
+
 
 		public void SetPosition(Vector3 x)
 		{
@@ -46,6 +97,12 @@ namespace Demax
 
 			if(body!=null)
 				body.Position = new JVector(Position.X+me.RecursiveTransform().Position.X,Position.Y+me.RecursiveTransform().Position.Y,Position.Z+me.RecursiveTransform().Position.Z);
+		}
+
+		public void SetStatic(bool state)
+		{
+			body.AffectedByGravity = !state;
+			body.IsStatic = state;
 		}
 
 		public void SetRotation(Matrix4 x)
@@ -122,11 +179,16 @@ namespace Demax
 			CCore.GetCore ().world.RemoveBody (body);
 			body = null;
 		}
+
+		public void CalculateModelMatrix()
+		{ 
+			ModelMatrix = Matrix4.Scale(Scale) * Rotation * Matrix4.CreateTranslation(Position + me.RecursiveTransform().Position);
+		}
  
         public abstract Vector3[] GetVerts();
         public abstract int[] GetIndices(int offset = 0);
-        public abstract Vector3[] GetColorData();
-        public abstract void CalculateModelMatrix();
+		public abstract Vector3[] GetColorData();
+
 		public abstract Vector2[] GetTextureCoords();
 	}
 }

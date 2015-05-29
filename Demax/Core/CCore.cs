@@ -78,6 +78,11 @@ namespace Demax
 			}
 		}
 
+		public CRenderer GetCell()
+		{
+			return renderer;
+		}
+
 		/// <summary>
 		/// Gets the input manager.
 		/// </summary>
@@ -121,8 +126,6 @@ namespace Demax
 		{
 			Console.WriteLine ("DeMax Engine");
 
-			// Retrieve the OpenGL version string. Do this once on startup.
-
 
 			instance = this;
 			colsys = new CollisionSystemSAP ();
@@ -132,6 +135,8 @@ namespace Demax
 			entityManager = new CEntityManager ();
 			inputManager = new CInputManager ();
 			renderer = new CRenderer ();
+
+			gameRenderer.Run (60.0f);
 		}
 	}
 }

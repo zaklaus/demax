@@ -8,7 +8,7 @@ using OpenTK.Input;
 
 namespace Demax
 {
-	class TexturedCube : Cube
+	public class TexturedCube : Cube
 	{
 		public TexturedCube(CEntity e)
 			: base(e)
