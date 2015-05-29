@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.IO;
+using System.Collections.Generic;
 using OpenTK;
 using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
@@ -30,6 +31,7 @@ namespace Demax
         public Matrix4 ModelMatrix = Matrix4.Identity;
         public Matrix4 ViewProjectionMatrix = Matrix4.Identity;
         public Matrix4 ModelViewProjectionMatrix = Matrix4.Identity;
+		public Matrix4 ViewModelMatrix = Matrix4.Identity;
 		public RigidBody body;
 
 		public Volume(CEntity x)
@@ -49,6 +51,9 @@ namespace Demax
 		public void SetRotation(Matrix4 x)
 		{
 			Rotation = x;
+
+			if (body != null)
+				body.Orientation = MatrixToJMatrix (Rotation);
 		}
 
 		public void SetScale(Vector3 x)
@@ -57,6 +62,24 @@ namespace Demax
 
 			if(body!=null)
 				body.Shape = new Jitter.Collision.Shapes.BoxShape(Scale.X+me.RecursiveTransform().Scale.X,Scale.Y+me.RecursiveTransform().Scale.Y,Scale.Z+me.RecursiveTransform().Scale.Z);
+		}
+
+		public Vector3[] GetNormals()
+		{
+			return GetVerts ();
+		}
+
+		public Vector3 CalculateNormalSurface(Vector3 p1, Vector3 p2, Vector3 p3)
+		{
+			Vector3 V1 = (p2 - p1);
+			Vector3 V2 = (p3 - p1);
+
+			Vector3 surfaceNormal = Vector3.Zero;
+			surfaceNormal.X = (V1.Y*V2.Y) - (V1.Z-V2.Y);
+			surfaceNormal.Y = - ( (V2.Z * V1.X) - (V2.X * V1.Z) );
+			surfaceNormal.Z = (V1.X*V2.Y) - (V1.Y*V2.X);
+
+			return surfaceNormal;
 		}
 
 		public Matrix4 JMatrixToMatrix(Jitter.LinearMath.JMatrix matrix)
@@ -73,6 +96,11 @@ namespace Demax
 				matrix.M32,
 				matrix.M33,
 				0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		}
+
+		public JMatrix MatrixToJMatrix(Matrix4 matrix)
+		{
+			return JMatrix.Identity;
 		}
 
 		/// <summary>
@@ -96,7 +124,6 @@ namespace Demax
 		}
  
         public abstract Vector3[] GetVerts();
-		public abstract Vector3[] GetNormals();
         public abstract int[] GetIndices(int offset = 0);
         public abstract Vector3[] GetColorData();
         public abstract void CalculateModelMatrix();

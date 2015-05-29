@@ -5,6 +5,7 @@ using OpenTK;
 using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Input;
+using System.Collections.Generic;
 
 namespace Demax
 {
@@ -17,6 +18,7 @@ namespace Demax
 			VertCount = 8;
 			IndiceCount = 36;
 			ColorDataCount = 8;
+			NormalCount = VertCount;
 		}
 
 		public override Vector3[] GetVerts()
@@ -33,19 +35,7 @@ namespace Demax
 			};
 		}
 
-		public override Vector3[] GetNormals()
-		{
-			return new Vector3[] {
-				new Vector3(-0.5f, -0.5f,  -0.5f),
-				new Vector3(0.5f, -0.5f,  -0.5f),
-				new Vector3(0.5f, 0.5f,  -0.5f),
-				new Vector3(-0.5f, 0.5f,  -0.5f),
-				new Vector3(-0.5f, -0.5f,  0.5f),
-				new Vector3(0.5f, -0.5f,  0.5f),
-				new Vector3(0.5f, 0.5f,  0.5f),
-				new Vector3(-0.5f, 0.5f,  0.5f),
-			};
-		}
+
 
 		public override Vector2[] GetTextureCoords()
 		{
@@ -104,8 +94,6 @@ namespace Demax
 
 		public override void CalculateModelMatrix()
 		{ 
-			//ModelMatrix = Matrix4.Scale(Scale) * Matrix4.CreateRotationX(Rotation.X) * Matrix4.CreateRotationY(Rotation.Y) * Matrix4.CreateRotationZ(Rotation.Z) * Matrix4.CreateTranslation(Position + base.me.RecursiveTransform().Position);
-			//ModelMatrix = Matrix4.Scale(Scale) * Matrix4.CreateRotationX(Rotation.X) * Matrix4.CreateRotationY(Rotation.Y) * Matrix4.CreateRotationZ(Rotation.Z) * Matrix4.CreateTranslation(Position + base.me.RecursiveTransform().Position);
 			ModelMatrix = Matrix4.Scale(Scale) * Rotation * Matrix4.CreateTranslation(Position + base.me.RecursiveTransform().Position);
 		}
 

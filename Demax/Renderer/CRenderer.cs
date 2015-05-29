@@ -64,7 +64,7 @@ namespace Demax
 			shaders.Add("textured", new CShaderProgram("vs_tex.glsl", "fs_tex.glsl", true));
 			shaders.Add("lighted", new CShaderProgram("vs_light.glsl", "fs_light.glsl", true));
 
-			activeShader = "textured";
+			activeShader = "lighted";
 
 			var cubes = core.EntityManager.CreateEntity ("Cubes");
 			cubes.Transform.Position = new Vector3 (0, -6, -20);
@@ -160,6 +160,7 @@ namespace Demax
 			List<Vector3> verts = new List<Vector3>();
 			List<int> inds = new List<int>();
 			List<Vector3> colors = new List<Vector3>();
+			List<Vector3> norms = new List<Vector3>();
 			List<Vector2> texcoords = new List<Vector2>();
 
 
@@ -173,12 +174,14 @@ namespace Demax
 					inds.AddRange(v.GetIndices(vertcount).ToList());
 					colors.AddRange(v.GetColorData().ToList());
 					texcoords.AddRange(v.GetTextureCoords());
+					norms.AddRange (v.GetNormals ());
 					vertcount += v.VertCount;
 				}
 			}
 
 			vertdata = verts.ToArray();
 			indicedata = inds.ToArray();
+			normdata = norms.ToArray ();
 			coldata = colors.ToArray();
 			texcoorddata = texcoords.ToArray();
 
@@ -250,14 +253,16 @@ namespace Demax
 
 
 			// Modelview Buffer
-			Matrix4 projection = mainCamera.GetViewMatrix() * Matrix4.CreatePerspectiveFieldOfView ((float)Math.PI / 4, gameRenderer.Width / (float)gameRenderer.Height, 0.1f, 500.0f);
+			Matrix4 viewmodel = mainCamera.GetViewMatrix();
+			Matrix4 projection = Matrix4.CreatePerspectiveFieldOfView ((float)Math.PI / 4, gameRenderer.Width / (float)gameRenderer.Height, 0.1f, 500.0f);
 
 
 			foreach (CEntity en in core.EntityManager.GetEntities()) {
 				foreach (Volume v in en.GetModels()) {
 					v.CalculateModelMatrix ();
 					v.ViewProjectionMatrix = projection;
-					v.ModelViewProjectionMatrix = v.ModelMatrix * v.ViewProjectionMatrix;
+					v.ViewModelMatrix = viewmodel;
+					v.ModelViewProjectionMatrix = v.ModelMatrix * v.ViewModelMatrix * v.ViewProjectionMatrix;
 				}
 			}
 
@@ -291,7 +296,10 @@ namespace Demax
 				foreach (Volume v in entity.GetModels())
 				{
 					GL.BindTexture(TextureTarget.Texture2D, v.TextureID);
-					GL.UniformMatrix4(shaders[activeShader].GetUniform("modelview"), false, ref v.ModelViewProjectionMatrix);
+					GL.UniformMatrix4(shaders[activeShader].GetUniform("M"), false, ref v.ModelMatrix);
+					GL.UniformMatrix4(shaders[activeShader].GetUniform("V"), false, ref v.ViewModelMatrix);
+					GL.UniformMatrix4(shaders[activeShader].GetUniform("P"), false, ref v.ViewProjectionMatrix);
+					GL.UniformMatrix4(shaders[activeShader].GetUniform("MVP"), false, ref v.ModelViewProjectionMatrix);
 
 					if (shaders[activeShader].GetAttribute("maintexture") != -1)
 					{
