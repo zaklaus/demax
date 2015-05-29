@@ -22,11 +22,13 @@ namespace Demax
         public Vector3 Scale = Vector3.One;
 		public CEntity me;
 		public bool isStatic = false;
+		public bool isVisible = true;
         public int VertCount;
         public int IndiceCount;
 		public int NormalCount;
         public int ColorDataCount;
 		public bool IsTextured = false;
+		public bool killOnZero = true;
 		public int TextureID;
 		public int TextureCoordsCount;
         public Matrix4 ModelMatrix = Matrix4.Identity;
@@ -34,6 +36,7 @@ namespace Demax
         public Matrix4 ModelViewProjectionMatrix = Matrix4.Identity;
 		public Matrix4 ViewModelMatrix = Matrix4.Identity;
 		public RigidBody body;
+		public bool markedForDestroy = false;
 
 		public Volume(CEntity x)
 		{
@@ -45,11 +48,29 @@ namespace Demax
 		public void LoadTexture(string file)
 		{
 			try {
-				this.TextureID = this.loadImage (file);	
+				if(!CCore.GetCore().Renderer.textures.ContainsKey(file)){
+					this.TextureID = this.loadImage (file);	
+					CCore.GetCore().Renderer.textures.Add(file,this.TextureID);
+				}
+				else
+					this.TextureID = CCore.GetCore().Renderer.textures[file];
 			} catch (Exception ex) {
 				Console.WriteLine ("IO Error: "+ ex.ToString ());
 			}
 
+		}
+
+		public void Destroy()
+		{
+			this.RemoveRigidbody ();
+			this.markedForDestroy = true;
+		}
+
+		public void AddForce(Vector3 f)
+		{
+			if (body != null) {
+				body.AddForce (new JVector (f.X, f.Y, f.Z));
+			}
 		}
 
 		int loadImage(Bitmap image)
@@ -101,8 +122,24 @@ namespace Demax
 
 		public void SetStatic(bool state)
 		{
-			body.AffectedByGravity = !state;
-			body.IsStatic = state;
+			if (body != null) {
+				body.AffectedByGravity = !state;
+				body.IsStatic = state;
+			}
+		}
+
+		public void ZeroGravity(bool state)
+		{
+			if (body != null)
+				body.AffectedByGravity = !state;
+		}
+
+		public void SetRotation(Vector3 x)
+		{
+			Rotation = Matrix4.CreateRotationX(x.X) * Matrix4.CreateRotationY(x.Y) * Matrix4.CreateRotationZ(x.Z);
+
+			if (body != null)
+				body.Orientation = MatrixToJMatrix (Rotation);
 		}
 
 		public void SetRotation(Matrix4 x)
@@ -112,6 +149,7 @@ namespace Demax
 			if (body != null)
 				body.Orientation = MatrixToJMatrix (Rotation);
 		}
+
 
 		public void SetScale(Vector3 x)
 		{
@@ -157,8 +195,19 @@ namespace Demax
 
 		public JMatrix MatrixToJMatrix(Matrix4 matrix)
 		{
-			return JMatrix.Identity;
+			return new JMatrix (
+				matrix.M11,
+				matrix.M12,
+				matrix.M13,
+				matrix.M21,
+				matrix.M22,
+				matrix.M23,
+				matrix.M31,
+				matrix.M32,
+				matrix.M33);
 		}
+
+
 
 		/// <summary>
 		/// Adds the rigidbody.
@@ -177,7 +226,6 @@ namespace Demax
 		public void RemoveRigidbody()
 		{
 			CCore.GetCore ().world.RemoveBody (body);
-			body = null;
 		}
 
 		public void CalculateModelMatrix()

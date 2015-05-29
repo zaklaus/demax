@@ -10,12 +10,15 @@ namespace Demax
 {
 	public class TexturedCube : Cube
 	{
-		public TexturedCube(CEntity e)
+		public TexturedCube(CEntity e, string file="")
 			: base(e)
 		{
 			VertCount = 24;
 			IndiceCount = 36;
 			TextureCoordsCount = 24;
+
+			if (file != "")
+				this.LoadTexture (file);
 		}
 
 		public override Vector3[] GetVerts()

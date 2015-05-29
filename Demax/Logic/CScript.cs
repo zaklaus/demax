@@ -112,7 +112,7 @@ namespace Demax
 		/// Calls the event.
 		/// </summary>
 		/// <param name="name">Name.</param>
-		public void CallEvent(string name)
+		public void CallEvent(string name, string args="")
 		{
 			if(!invalid)
 				try{
@@ -122,6 +122,7 @@ namespace Demax
 				catch(Exception ex){
 					if (ex.ToString ().Contains ("ScopeStorage"))
 						return;
+				
 					if(lasterror!=ex.ToString())
 						Console.WriteLine ("Logic Error: " + ex.ToString ());
 

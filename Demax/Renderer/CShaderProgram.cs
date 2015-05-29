@@ -48,6 +48,7 @@ namespace Demax
 
 		public CShaderProgram(String vshader, String fshader, bool fromFile = false)
 		{
+			Console.WriteLine ("Initializing shaders...");
 			ProgramID = GL.CreateProgram();
 
 			if (fromFile)
@@ -63,6 +64,8 @@ namespace Demax
 
 			Link();
 			GenBuffers();
+
+			Console.WriteLine ("Shaders compiled!");
 		}
 
 		void loadShader(string code, ShaderType type, out int address)

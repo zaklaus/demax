@@ -25,11 +25,11 @@ namespace Demax
 		GameWindow gameRenderer;
 		CCore core;
 		Camera mainCamera;
-		DownFall df = new DownFall();
 
 		bool updated, onDemand, loaded = false;
 		float time = 0f;
-		public float deltaTime, lastTime = 0.0f;
+		float deltaTime, lastTime = 0.0f;
+		float zeroKill = -100.0f;
 
 		/// <summary>
 		/// Gets the time.
@@ -40,6 +40,22 @@ namespace Demax
 			get {
 				return time;
 			}
+		}
+
+		/// <summary>
+		/// Gets the delta time.
+		/// </summary>
+		/// <value>The delta time.</value>
+		public float DeltaTime
+		{
+			get {
+				return deltaTime;
+			}
+		}
+
+		public void SetZeroKill(float k)
+		{
+			zeroKill = k;
 		}
 
 		Dictionary<string, CShaderProgram> shaders = new Dictionary<string, CShaderProgram>();
@@ -114,6 +130,8 @@ namespace Demax
 			{
 				foreach (Volume v in en.GetModels())
 				{
+					if (!v.isVisible)
+						continue;
 					verts.AddRange(v.GetVerts().ToList());
 					inds.AddRange(v.GetIndices(vertcount).ToList());
 					colors.AddRange(v.GetColorData().ToList());
@@ -258,6 +276,27 @@ namespace Demax
 					if (v.body != null && !v.body.IsStatic) {
 						v.Position = new Vector3 (v.body.Position.X, v.body.Position.Y, v.body.Position.Z);
 						v.Rotation = v.JMatrixToMatrix (v.body.Orientation);
+
+						if (v.Position.Y < zeroKill) {
+							if (v.killOnZero) {
+								v.Destroy ();
+							} else {
+								v.RemoveRigidbody ();
+								v.Position = Vector3.Zero;
+								v.Rotation = Matrix4.Identity;
+								v.isVisible = false;
+							}
+						}
+					}
+				}
+			}
+			bool shouldFlush = false;
+			foreach (CEntity en in core.EntityManager.GetEntities()) {
+				List<Volume> l = en.GetModels ();
+				foreach (Volume v in l.ToList()) {
+					if (v.markedForDestroy) {
+						en.Models.Remove (v);
+						shouldFlush = true;
 					}
 				}
 			}
@@ -266,7 +305,7 @@ namespace Demax
 
 			core.InputManager.TickCursor ();
 
-			if(onDemand)
+			if(onDemand || shouldFlush)
 				updateTest ();
 
 
@@ -313,6 +352,10 @@ namespace Demax
 			{
 				foreach (Volume v in entity.GetModels())
 				{
+					if (!v.isVisible) {
+						indiceat += v.IndiceCount;
+						continue;
+					}
 					GL.BindTexture(TextureTarget.Texture2D, v.TextureID);
 					GL.UniformMatrix4(shaders[activeShader].GetUniform("M"), false, ref v.ModelMatrix);
 					GL.UniformMatrix4(shaders[activeShader].GetUniform("V"), false, ref v.ViewModelMatrix);
