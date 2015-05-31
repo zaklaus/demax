@@ -9,9 +9,9 @@ in vec3 f_pos_wp;
 
 uniform sampler2D maintexture;
 
-const vec3 ambient = vec3(0.1, 0.1, 0.1);
+const vec3 ambient = vec3(0.5, 0.5, 0.5);
 const vec3 lightVec = vec3(2.0, 1.0, 1.5);
-const vec3 lightColor = vec3(0.5, 0.5, 0.5);
+const vec3 lightColor = vec3(0.01, 0.01, 0.01);
 
 void
 main()

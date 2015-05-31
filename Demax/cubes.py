@@ -5,13 +5,9 @@ cell.SetZeroKill(0)
 
 cubes = []
 
+
+
 rand = Random()
-test = TexturedCube(me, 'Textures/img03.jpg')
-test.Position = Vector3(0,5,0)
-test.Scale = Vector3(5,5,5)
-test.AddRigidbody()
-test.ZeroGravity(True)
-me.AddModel(test)
 
 def OnStart():
 	floor = TexturedCube(me)
@@ -22,15 +18,9 @@ def OnStart():
 	floor.SetStatic(True)
 	me.AddModel(floor)
 
-
-
-	for x in range(0,50):
-		fall = TexturedCube(me)
-		fall.Position  = Vector3 (rand.NextDouble()*0.15,15,rand.NextDouble()*0.15)
-		fall.LoadTexture('Textures/img01.jpg')
-		fall.AddRigidbody ()
-		me.AddModel(fall)
-
+	test = ObjVolume.LoadFromFile(me, 'Models/multimesh.obj')
+	test.Position = Vector3(0,3,0)
+	me.AddModel(test)
 
 def GetCube():
 	for x in range(len(cubes)):
@@ -39,8 +29,6 @@ def GetCube():
 	return None
 
 def OnUpdate():
-	cubes = me.Models
-	test.SetRotation(Vector3(0,20*cell.Time,5*cell.Time))
 	if game.InputManager.GetState(Key_W) == True:
 		cam.Move(0.0,1.0,0.0)
 	if game.InputManager.GetState(Key_A) == True:
@@ -53,14 +41,6 @@ def OnUpdate():
 		cam.Move(0.0,0.0,-1.0)
 	if game.InputManager.GetState(Key_E) == True:
 		cam.Move(0.0,0.0,1.0)
-	if input.GetState(Key_I):
-		test.isVisible = True
-		test.Position = Vector3(0,5,0)
-		test.AddRigidbody()
-		test.ZeroGravity(True)
-	if input.GetState(Key_O):
-		test.isVisible = False
-		test.RemoveRigidbody()
 	if input.GetState(Key_P) == True:
 		game.Quit()
 	if input.GetState(Key_N) == True:

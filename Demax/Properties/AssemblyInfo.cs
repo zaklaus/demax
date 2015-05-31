@@ -36,7 +36,7 @@ using System.Runtime.CompilerServices;
 [assembly: AssemblyConfiguration ("")]
 [assembly: AssemblyCompany ("")]
 [assembly: AssemblyProduct ("")]
-[assembly: AssemblyCopyright ("Daniela Madarászová")]
+[assembly: AssemblyCopyright ("ZaKlaus")]
 [assembly: AssemblyTrademark ("")]
 [assembly: AssemblyCulture ("")]
 

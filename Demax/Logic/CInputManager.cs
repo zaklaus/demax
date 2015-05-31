@@ -69,7 +69,13 @@ namespace Demax
 		/// <param name="id">Identifier.</param>
 		public bool GetState(int id)
 		{
-			return keys [(Key)id];
+			try{
+				return keys [(Key)id];
+			}
+			catch{
+				keys.Add ((Key)id, false);
+				return false;
+			}
 		}
 
 		/// <summary>
@@ -81,14 +87,14 @@ namespace Demax
 
 			keys = new Dictionary<Key,bool> ();
 
-			Key latestKey = Key.Z;
+			/*Key latestKey = Key.Z;
 			var ekeys = Enum.GetValues (typeof(Key));
 			for (int i = 0; i < ekeys.Length; i++) {
 				if (latestKey != (Key)ekeys.GetValue (i)) {
 					latestKey = (Key)ekeys.GetValue (i);
 					keys.Add ((Key)ekeys.GetValue (i), false);
 				}
-			}
+			}*/
 
 		}
 
@@ -125,7 +131,12 @@ namespace Demax
 		public void OnKeyDown(object sender, KeyboardKeyEventArgs e)
 		{
 			//Console.WriteLine ("Key Down: " + e.Key.ToString ());
-			keys [e.Key] = true;
+			try{
+				keys [e.Key] = true;
+			}
+			catch{
+				keys.Add (e.Key, true);
+			}
 		}
 
 		/// <summary>
@@ -136,7 +147,12 @@ namespace Demax
 		public void OnKeyUp(object sender, KeyboardKeyEventArgs e)
 		{
 			//Console.WriteLine ("Key Up: " + e.Key.ToString ());
-			keys [e.Key] = false;
+			try{
+				keys [e.Key] = false;
+			}
+			catch{
+				keys.Add (e.Key, false);
+			}
 		}
 
 		/// <summary>

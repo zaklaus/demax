@@ -141,71 +141,78 @@ namespace Demax
 		}
 
 
-		void updateTest()
+		void updateTest(Volume v)
 		{
+				try{
+				int vertcount = 0;
 
-			List<Vector3> verts = new List<Vector3>();
-			List<int> inds = new List<int>();
-			List<Vector3> colors = new List<Vector3>();
-			List<Vector3> norms = new List<Vector3>();
-			List<Vector2> texcoords = new List<Vector2>();
+				//foreach(CEntity en in core.EntityManager.GetEntities())
+				//{
+					//foreach (Volume v in en.GetModels())
+					//{
+				if (!v.isVisible)
+					return;
 
+				List<Vector3> verts = new List<Vector3>();
+				List<int> inds = new List<int>();
+				List<Vector3> colors = new List<Vector3>();
+				List<Vector3> norms = new List<Vector3>();
+				List<Vector2> texcoords = new List<Vector2>();
+				//		if (v.meshes.Count > 0) {
+				//			foreach (Volume mesh in v.meshes) {
+								
+								verts.AddRange(v.GetVerts().ToList());
+								inds.AddRange(v.GetIndices().ToList());
+								colors.AddRange(v.GetColorData().ToList());
+								texcoords.AddRange(v.GetTextureCoords().ToList());
+								norms.AddRange (v.GetNormals ().ToList());
+								vertcount += v.VertCount;
+				//			}
+				//		}
+				//	}
+				//}
 
-			int vertcount = 0;
+				vertdata = verts.ToArray();
+				indicedata = inds.ToArray();
+				normdata = norms.ToArray ();
+				coldata = colors.ToArray();
+				texcoorddata = texcoords.ToArray();
 
-			foreach(CEntity en in core.EntityManager.GetEntities())
-			{
-				foreach (Volume v in en.GetModels())
+				GL.BindBuffer(BufferTarget.ArrayBuffer, shaders[activeShader].GetBuffer("vPosition"));
+
+				GL.BufferData<Vector3>(BufferTarget.ArrayBuffer, (IntPtr)(vertdata.Length * Vector3.SizeInBytes), vertdata, BufferUsageHint.StaticDraw);
+				GL.VertexAttribPointer(shaders[activeShader].GetAttribute("vPosition"), 3, VertexAttribPointerType.Float, false, 0, 0);
+
+				if (shaders [activeShader].GetAttribute ("vNormal") != -1) {
+					GL.BindBuffer (BufferTarget.ArrayBuffer, shaders [activeShader].GetBuffer ("vNormal"));
+
+					GL.BufferData<Vector3> (BufferTarget.ArrayBuffer, (IntPtr)(normdata.Length * Vector3.SizeInBytes), normdata, BufferUsageHint.StaticDraw);
+					GL.VertexAttribPointer (shaders [activeShader].GetAttribute ("vNormal"), 3, VertexAttribPointerType.Float, false, 0, 0);
+				}
+				// Indice Buffer
+				GL.BindBuffer (BufferTarget.ElementArrayBuffer, ibo_elements);
+				GL.BufferData<int> (BufferTarget.ElementArrayBuffer,
+					(IntPtr)(indicedata.Length * sizeof(int)),
+					indicedata,
+					BufferUsageHint.StaticDraw);
+
+				if (shaders[activeShader].GetAttribute("vColor") != -1)
 				{
-					if (!v.isVisible)
-						continue;
-					verts.AddRange(v.GetVerts().ToList());
-					inds.AddRange(v.GetIndices(vertcount).ToList());
-					colors.AddRange(v.GetColorData().ToList());
-					texcoords.AddRange(v.GetTextureCoords());
-					norms.AddRange (v.GetNormals ());
-					vertcount += v.VertCount;
+					GL.BindBuffer(BufferTarget.ArrayBuffer, shaders[activeShader].GetBuffer("vColor"));
+					GL.BufferData<Vector3>(BufferTarget.ArrayBuffer, (IntPtr)(coldata.Length * Vector3.SizeInBytes), coldata, BufferUsageHint.StaticDraw);
+					GL.VertexAttribPointer(shaders[activeShader].GetAttribute("vColor"), 3, VertexAttribPointerType.Float, true, 0, 0);
+				}
+
+				if (shaders[activeShader].GetAttribute("texcoord") != -1)
+				{
+					GL.BindBuffer(BufferTarget.ArrayBuffer, shaders[activeShader].GetBuffer("texcoord"));
+					GL.BufferData<Vector2>(BufferTarget.ArrayBuffer, (IntPtr)(texcoorddata.Length * Vector2.SizeInBytes), texcoorddata, BufferUsageHint.StaticDraw);
+					GL.VertexAttribPointer(shaders[activeShader].GetAttribute("texcoord"), 2, VertexAttribPointerType.Float, true, 0, 0);
 				}
 			}
-
-			vertdata = verts.ToArray();
-			indicedata = inds.ToArray();
-			normdata = norms.ToArray ();
-			coldata = colors.ToArray();
-			texcoorddata = texcoords.ToArray();
-
-			GL.BindBuffer(BufferTarget.ArrayBuffer, shaders[activeShader].GetBuffer("vPosition"));
-
-			GL.BufferData<Vector3>(BufferTarget.ArrayBuffer, (IntPtr)(vertdata.Length * Vector3.SizeInBytes), vertdata, BufferUsageHint.StaticDraw);
-			GL.VertexAttribPointer(shaders[activeShader].GetAttribute("vPosition"), 3, VertexAttribPointerType.Float, false, 0, 0);
-
-			if (shaders [activeShader].GetAttribute ("vNormal") != -1) {
-				GL.BindBuffer (BufferTarget.ArrayBuffer, shaders [activeShader].GetBuffer ("vNormal"));
-
-				GL.BufferData<Vector3> (BufferTarget.ArrayBuffer, (IntPtr)(normdata.Length * Vector3.SizeInBytes), normdata, BufferUsageHint.StaticDraw);
-				GL.VertexAttribPointer (shaders [activeShader].GetAttribute ("vNormal"), 3, VertexAttribPointerType.Float, false, 0, 0);
+			catch(Exception ex){
+				Console.WriteLine (ex.ToString ());
 			}
-			// Indice Buffer
-			GL.BindBuffer (BufferTarget.ElementArrayBuffer, ibo_elements);
-			GL.BufferData<int> (BufferTarget.ElementArrayBuffer,
-				(IntPtr)(indicedata.Length * sizeof(int)),
-				indicedata,
-				BufferUsageHint.StaticDraw);
-
-			if (shaders[activeShader].GetAttribute("vColor") != -1)
-			{
-				GL.BindBuffer(BufferTarget.ArrayBuffer, shaders[activeShader].GetBuffer("vColor"));
-				GL.BufferData<Vector3>(BufferTarget.ArrayBuffer, (IntPtr)(coldata.Length * Vector3.SizeInBytes), coldata, BufferUsageHint.StaticDraw);
-				GL.VertexAttribPointer(shaders[activeShader].GetAttribute("vColor"), 3, VertexAttribPointerType.Float, true, 0, 0);
-			}
-
-			if (shaders[activeShader].GetAttribute("texcoord") != -1)
-			{
-				GL.BindBuffer(BufferTarget.ArrayBuffer, shaders[activeShader].GetBuffer("texcoord"));
-				GL.BufferData<Vector2>(BufferTarget.ArrayBuffer, (IntPtr)(texcoorddata.Length * Vector2.SizeInBytes), texcoorddata, BufferUsageHint.StaticDraw);
-				GL.VertexAttribPointer(shaders[activeShader].GetAttribute("texcoord"), 2, VertexAttribPointerType.Float, true, 0, 0);
-			}
-
 			GL.ClearColor (Color.CornflowerBlue);
 			GL.PointSize (5f);
 		}
@@ -215,7 +222,7 @@ namespace Demax
 		/// </summary>
 		public void Flush()
 		{
-			updateTest ();
+			//updateTest ();
 		}
 
 		/// <summary>
@@ -271,7 +278,7 @@ namespace Demax
 
 			/* TEST CODE */
 
-			updateTest ();
+			//updateTest ();
 
 			loaded = true;
 		}
@@ -332,8 +339,8 @@ namespace Demax
 
 			core.InputManager.TickCursor ();
 
-			if(onDemand || shouldFlush)
-				updateTest ();
+			//if(onDemand || shouldFlush)
+				//updateTest ();
 
 
 			// Modelview Buffer
@@ -379,23 +386,45 @@ namespace Demax
 			{
 				foreach (Volume v in entity.GetModels())
 				{
-					if (!v.isVisible) {
-						indiceat += v.IndiceCount;
-						continue;
-					}
-					GL.BindTexture(TextureTarget.Texture2D, v.TextureID);
-					GL.UniformMatrix4(shaders[activeShader].GetUniform("M"), false, ref v.ModelMatrix);
-					GL.UniformMatrix4(shaders[activeShader].GetUniform("V"), false, ref v.ViewModelMatrix);
-					GL.UniformMatrix4(shaders[activeShader].GetUniform("P"), false, ref v.ViewProjectionMatrix);
-					GL.UniformMatrix4(shaders[activeShader].GetUniform("MVP"), false, ref v.ModelViewProjectionMatrix);
+					int i=0;
+					foreach (Volume m in v.meshes) {
+						updateTest (m);
+						if (!m.isVisible) {
+							indiceat += m.IndiceCount;
+							continue;
+						}
+						int tex = 0;
 
-					if (shaders[activeShader].GetAttribute("maintexture") != -1)
-					{
-						GL.Uniform1(shaders[activeShader].GetAttribute("maintexture"), v.TextureID);
-					}
+						if (v.materials.Count == 0)
+							tex = v.TextureID;
+						else
+						//TODO: proper multi-texture handling
+							foreach (var mat in v.materials)
+								if (mat.name == m.matuse [0]) {
+									tex = mat.TextureID;
+								}
+						
 
-					GL.DrawElements(BeginMode.Triangles, v.IndiceCount, DrawElementsType.UnsignedInt, indiceat * sizeof(uint));
-					indiceat += v.IndiceCount;
+						GL.BindTexture (TextureTarget.Texture2D, tex);
+						GL.UniformMatrix4 (shaders [activeShader].GetUniform ("M"), false, ref v.ModelMatrix);
+						GL.UniformMatrix4 (shaders [activeShader].GetUniform ("V"), false, ref v.ViewModelMatrix);
+						GL.UniformMatrix4 (shaders [activeShader].GetUniform ("P"), false, ref v.ViewProjectionMatrix);
+						GL.UniformMatrix4 (shaders [activeShader].GetUniform ("MVP"), false, ref v.ModelViewProjectionMatrix);
+
+						if (shaders [activeShader].GetAttribute ("maintexture") != -1) {
+							GL.Uniform1 (shaders [activeShader].GetAttribute ("maintexture"), tex);
+						}
+						try{
+							if(v.materials.Count == 0)
+								GL.DrawElements (PrimitiveType.Triangles, m.IndiceCount, DrawElementsType.UnsignedInt, indiceat * sizeof(uint));
+							else
+								GL.DrawArrays(PrimitiveType.Triangles, 0, m.IndiceCount);
+						} catch(Exception ex){
+							Console.WriteLine (ex.ToString ());
+						}
+						indiceat += m.IndiceCount;
+						i++;
+					}
 				}
 			}
 

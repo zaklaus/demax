@@ -83,6 +83,7 @@
     <Compile Include="Physics\AABB.cs" />
     <Compile Include="Physics\DownFall.cs" />
     <Compile Include="NotImplemented.cs" />
+    <Compile Include="Renderer\ObjVolume.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

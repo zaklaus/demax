@@ -46,6 +46,8 @@ namespace Demax
 
 			if (file != "")
 				this.LoadTexture (file);
+
+			meshes.Add (this);
 		}
 
 		public override Vector3[] GetVerts()

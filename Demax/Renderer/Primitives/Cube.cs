@@ -46,6 +46,8 @@ namespace Demax
 			IndiceCount = 36;
 			ColorDataCount = 8;
 			NormalCount = VertCount;
+
+			meshes.Add (this);
 		}
 
 		public override Vector3[] GetVerts()
@@ -62,7 +64,10 @@ namespace Demax
 			};
 		}
 
-
+		public override Vector3[] GetNormals()
+		{
+			return GetVerts ();
+		}
 
 		public override Vector2[] GetTextureCoords()
 		{

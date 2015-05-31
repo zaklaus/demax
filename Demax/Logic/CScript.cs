@@ -52,10 +52,31 @@ namespace Demax
 		ScriptSource src;
 
 
-		private ScriptRuntime m_runtime = Python.CreateRuntime();
-		private ScriptEngine m_engine = null;
+		static private ScriptRuntime m_runtime = Python.CreateRuntime();
+		static private ScriptEngine m_engine = m_runtime.GetEngine ("Python");
 		private ScriptScope m_scope = null;
 		bool invalid = false;
+		static Dictionary<string, int> keys;
+
+		static void LoadKeys(CScript c)
+		{
+			if (keys == null) {
+				keys = new Dictionary<string, int> ();
+				Key[] ekeys = (Key[])Enum.GetValues (typeof(Key));
+				int _i = 0;
+				Key lastkey = ekeys[14];
+				foreach (Key key in ekeys) {
+					if (key == lastkey)
+						continue;
+					lastkey = key;
+					keys.Add ("Key_" + key.ToString (), (int)key);
+					_i++;
+				}
+			}
+			foreach (var k in keys) {
+				c.m_scope.SetVariable (k.Key, (int)k.Value);
+			}
+		}
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Demax.CScript"/> class.
@@ -64,31 +85,25 @@ namespace Demax
 		/// <param name="e">E.</param>
 		public CScript (string filename, CEntity e)
 		{
+			var time = DateTime.Now;
 			if (!File.Exists (filename)) {
 				return;
 			}
 			entity = e;
 
-			m_engine = m_runtime.GetEngine ("Python");
-
 			m_scope = m_engine.CreateScope();
 			m_scope.ImportModule ("clr");
 			m_scope.SetVariable ("me", entity);
 			var game = CCore.GetCore ();
-
+			Console.WriteLine (DateTime.Now - time);
 			m_scope.SetVariable ("cam", e.game.MainCamera);
 			m_scope.SetVariable ("game", e.game);
 			m_scope.SetVariable ("cell", e.game.Renderer);
 
 			m_scope.SetVariable ("input", e.game.InputManager);
 
-			Key[] ekeys = (Key[])Enum.GetValues (typeof(Key)); int _i = 0;
-			Console.WriteLine ("FK: " + ekeys [14].ToString());
-			foreach(Key key in ekeys)
-			{
-				m_scope.SetVariable ("Key_"+key.ToString(), (int)key);
-				_i++;
-			}
+			LoadKeys (this);
+
 			m_engine.Execute ("import clr", m_scope);
 			m_engine.Execute ("clr.AddReference(\"Demax\")", m_scope);
 			m_engine.Execute ("clr.AddReference(\"OpenTK\")", m_scope);
@@ -98,7 +113,6 @@ namespace Demax
 			m_engine.Execute ("from System import *", m_scope);
 			m_engine.Execute ("from System.IO import *", m_scope);
 			m_engine.Execute ("from OpenTK import *", m_scope);
-			m_engine.Execute ("print(\"Script()\")", m_scope);
 			src = m_engine.CreateScriptSourceFromFile (filename);
 			try{
 				

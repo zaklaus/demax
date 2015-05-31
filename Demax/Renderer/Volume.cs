@@ -42,35 +42,10 @@ using System.Drawing.Imaging;
 
 namespace Demax
 {
-	public abstract class Volume
+	public class Material
 	{
-		public Vector3 Position = Vector3.Zero;
-		public Matrix4 Rotation = Matrix4.Identity;
-        public Vector3 Scale = Vector3.One;
-		public CEntity me;
-		public bool isStatic = false;
-		public bool isVisible = true;
-        public int VertCount;
-        public int IndiceCount;
-		public int NormalCount;
-        public int ColorDataCount;
-		public bool IsTextured = false;
-		public bool killOnZero = true;
 		public int TextureID;
-		public int TextureCoordsCount;
-        public Matrix4 ModelMatrix = Matrix4.Identity;
-        public Matrix4 ViewProjectionMatrix = Matrix4.Identity;
-        public Matrix4 ModelViewProjectionMatrix = Matrix4.Identity;
-		public Matrix4 ViewModelMatrix = Matrix4.Identity;
-		public RigidBody body;
-		public bool markedForDestroy = false;
-
-		public Volume(CEntity x)
-		{
-			me = x;
-
-			x.game.GetCell().Flush ();
-		}
+		public string name;
 
 		public void LoadTexture(string file)
 		{
@@ -85,19 +60,6 @@ namespace Demax
 				Console.WriteLine ("IO Error: "+ ex.ToString ());
 			}
 
-		}
-
-		public void Destroy()
-		{
-			this.RemoveRigidbody ();
-			this.markedForDestroy = true;
-		}
-
-		public void AddForce(Vector3 f)
-		{
-			if (body != null) {
-				body.AddForce (new JVector (f.X, f.Y, f.Z));
-			}
 		}
 
 		int loadImage(Bitmap image)
@@ -116,6 +78,111 @@ namespace Demax
 			GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
 
 			return texID;
+		}
+
+		/// <summary>
+		/// Loads the image.
+		/// </summary>
+		/// <returns>The image.</returns>
+		/// <param name="filename">Filename.</param>
+		public int loadImage(string filename)
+		{
+			try
+			{
+				Bitmap file = new Bitmap(filename);
+				int id = loadImage(file);
+				return id;
+			}
+			catch
+			{
+				return -1;
+			}
+		}
+
+		public Material(string name, string texture)
+		{
+			this.name = name;
+			this.LoadTexture (texture);
+		}
+	}
+
+	public abstract class Volume
+	{
+		public Vector3 Position = Vector3.Zero;
+		public Matrix4 Rotation = Matrix4.Identity;
+        public Vector3 Scale = Vector3.One;
+		public CEntity me;
+		public bool isStatic = false;
+		public bool isVisible = true;
+		public virtual int VertCount { get; set; }
+		public virtual int NormalCount { get; set; }
+		public virtual int IndiceCount { get; set; }
+		public virtual int ColorDataCount { get; set; }
+		public bool IsTextured = false;
+		public bool killOnZero = true;
+		public int TextureID;
+		public int TextureCoordsCount;
+        public Matrix4 ModelMatrix = Matrix4.Identity;
+        public Matrix4 ViewProjectionMatrix = Matrix4.Identity;
+        public Matrix4 ModelViewProjectionMatrix = Matrix4.Identity;
+		public Matrix4 ViewModelMatrix = Matrix4.Identity;
+		public RigidBody body;
+		public List<Volume> meshes = new List<Volume>();
+		public Dictionary<int, string> matuse = new Dictionary<int, string> ();
+		public List<Material> materials = new List<Material> ();
+		public bool markedForDestroy = false;
+		public Tuple<int,int,int> maxIndex = new Tuple<int, int, int> (0,0,0);
+
+		public Volume(CEntity x)
+		{
+			me = x;
+			x.game.GetCell().Flush ();
+		}
+
+		public void LoadTexture(string file)
+		{
+			try {
+				if(!CCore.GetCore().Renderer.textures.ContainsKey(file)){
+					this.TextureID = this.loadImage (file);	
+					CCore.GetCore().Renderer.textures.Add(file,this.TextureID);
+				}
+				else
+					this.TextureID = CCore.GetCore().Renderer.textures[file];
+			} catch (Exception ex) {
+				Console.WriteLine ("IO Error: "+ ex.ToString ());
+			}
+
+		}
+
+		int loadImage(Bitmap image)
+		{
+			int texID = GL.GenTexture();
+
+			GL.BindTexture(TextureTarget.Texture2D, texID);
+			BitmapData data = image.LockBits(new System.Drawing.Rectangle(0, 0, image.Width, image.Height),
+				ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+			GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0,
+				OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+
+			image.UnlockBits(data);
+
+			GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+
+			return texID;
+		}
+
+		public void Destroy()
+		{
+			this.RemoveRigidbody ();
+			this.markedForDestroy = true;
+		}
+
+		public void AddForce(Vector3 f)
+		{
+			if (body != null) {
+				body.AddForce (new JVector (f.X, f.Y, f.Z));
+			}
 		}
 
 		/// <summary>
@@ -186,10 +253,11 @@ namespace Demax
 				body.Shape = new Jitter.Collision.Shapes.BoxShape(Scale.X+me.RecursiveTransform().Scale.X,Scale.Y+me.RecursiveTransform().Scale.Y,Scale.Z+me.RecursiveTransform().Scale.Z);
 		}
 
-		public Vector3[] GetNormals()
-		{
-			return GetVerts ();
-		}
+		/// <summary>
+		/// Gets the normals.
+		/// </summary>
+		/// <returns>The normals.</returns>
+		public abstract Vector3[] GetNormals ();
 
 		public Vector3 CalculateNormalSurface(Vector3 p1, Vector3 p2, Vector3 p3)
 		{
