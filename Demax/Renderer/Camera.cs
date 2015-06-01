@@ -56,6 +56,20 @@ namespace Demax
 		public Camera()
 		{
 		}
+		/// <summary>
+		/// The field of view.
+		/// </summary>
+		public float FieldOfView = 75.0f;
+		/// <summary>
+		/// The near plane.
+		/// </summary>
+		public float nearPlane = 0.01f;
+		/// <summary>
+		/// The far plane.
+		/// </summary>
+		public float farPlane = 500.0f;
+
+
 
 		/// <summary>
 		/// The orientation.

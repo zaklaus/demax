@@ -42,21 +42,27 @@ using Jitter.Dynamics;
 using Jitter.LinearMath;
 using System.Drawing.Imaging;
 using System.Globalization;
+using Jitter.Collision;
+using Jitter;
+using Jitter.DataStructures;
+using Jitter.Dynamics;
+using Jitter.LinearMath;
+using System.Drawing.Imaging;
 
 namespace Demax
 {
 	public class ObjVolume : Volume
 	{
-		Vector3[] vertices;
-		Vector3[] colors;
-		Vector3[] normals;
-		Vector2[] texturecoords;
+
 
 		public List<Tuple<Vector3,Vector3,Vector3>> faces = new List<Tuple<Vector3, Vector3, Vector3>>();
 		public override int VertCount { get { return vertices.Length; } }
 		public override int NormalCount { get { return vertices.Length; } }
-		public override int IndiceCount { get { return faces.Count * 3; } }
+		public override int IndiceCount { get { return indices.Count; } }
 		public override int ColorDataCount { get { return colors.Length; } }
+		public List<JVector> orig_verts = new List<JVector> ();
+		public List<Tuple<int,int,int>> newfaces = new List<Tuple<int, int, int>> ();
+        
 		/// <summary>
 		/// Get vertices for this object
 		/// </summary>
@@ -73,16 +79,7 @@ namespace Demax
 		/// <returns>Array of indices with offset applied</returns>
 		public override int[] GetIndices(int offset = 0)
 		{
-			List<int> temp = new List<int>();
-
-			foreach (var face in faces)
-			{
-				temp.Add((int)face.Item1.X + offset);
-				temp.Add((int)face.Item1.Y + offset);
-				temp.Add((int)face.Item1.Z + offset);
-			}
-
-			return temp.ToArray();
+			return indices.ToArray();
 		}
 
 		/// <summary>
@@ -106,6 +103,32 @@ namespace Demax
 		public override Vector3[] GetNormals()
 		{
 			return normals;
+		}
+
+		public override void AddRigidbody()
+		{
+            foreach (var x in meshes)
+            {
+                List<TriangleVertexIndices> f = new List<TriangleVertexIndices>();
+                for (int i = 0; i < x.indices.Count; i += 3)
+                {
+                    f.Add(new TriangleVertexIndices(x.indices[i], x.indices[i+1], x.indices[i + 2]));
+                }
+                List<JVector> verts = new List<Jitter.LinearMath.JVector>();
+                foreach (var vertex in x.vertices)
+                {
+                    verts.Add(new JVector(vertex.X, vertex.Y, vertex.Z));
+                }
+
+                Jitter.Collision.Shapes.TriangleMeshShape t = new Jitter.Collision.Shapes.TriangleMeshShape(new Octree(verts, f));
+                
+                var z = new RigidBody(t);
+                body.Add(z);
+                z.Position = new JVector(Position.X, Position.Y, Position.Z);
+
+                //body.Orientation = (JVector)Rotation;
+                CCore.GetCore().world.AddBody(z);
+            }
 		}
 
 		public ObjVolume (CEntity e)
@@ -356,11 +379,27 @@ namespace Demax
 			Console.WriteLine ("VertIndex: "+faces[0].Item1.X+" and face count: "+faces.Count);
 			Console.WriteLine ("VertOffset: " + (faces [0].Item1.X - lastIndex.Item1));
 			int offset = (lastIndex.Item1 > 0) ? -1 : 0;
+
+			List<Tuple<int,int,int>> newfaces = new List<Tuple<int, int, int>> ();
+
 			for (int i = 0; i < faces.Count; i++) {
+				newfaces.Add (new Tuple<int, int, int> (
+					MathHelper.Clamp((int)faces [i].Item1.X - lastIndex.Item1+offset, 0, verts.Count-1), 
+					MathHelper.Clamp((int)faces [i].Item2.X - lastIndex.Item2+offset, 0, texs.Count-1), 
+					MathHelper.Clamp((int)faces [i].Item3.X - lastIndex.Item3+offset, 0, normals.Count-1)));
+				newfaces.Add (new Tuple<int, int, int> (
+					MathHelper.Clamp((int)faces [i].Item1.Y - lastIndex.Item1+offset, 0, verts.Count-1), 
+					MathHelper.Clamp((int)faces [i].Item2.Y - lastIndex.Item2+offset, 0, texs.Count-1), 
+					MathHelper.Clamp((int)faces [i].Item3.Y - lastIndex.Item3+offset, 0, normals.Count-1)));
+				newfaces.Add (new Tuple<int, int, int> (
+					MathHelper.Clamp((int)faces [i].Item1.Z - lastIndex.Item1+offset, 0, verts.Count-1), 
+					MathHelper.Clamp((int)faces [i].Item2.Z - lastIndex.Item2+offset, 0, texs.Count-1), 
+					MathHelper.Clamp((int)faces [i].Item3.Z - lastIndex.Item3+offset, 0, normals.Count-1)));
+			}
+
+			for (int i = 0; i < newfaces.Count; i++) {
 				try{
-					temp_vertices.Add(verts[MathHelper.Clamp(((int)faces[i].Item1.X - lastIndex.Item1+offset), 0, verts.Count-1)]);
-					temp_vertices.Add(verts[MathHelper.Clamp(((int)faces[i].Item1.Y - lastIndex.Item1+offset), 0, verts.Count-1)]);
-					temp_vertices.Add(verts[MathHelper.Clamp(((int)faces[i].Item1.Z - lastIndex.Item1+offset), 0, verts.Count-1)]);
+					temp_vertices.Add(verts[newfaces[i].Item1]);
 				} catch(Exception ex){
 					Console.WriteLine (ex.ToString ());
 					Console.WriteLine (verts.Count);
@@ -368,34 +407,104 @@ namespace Demax
 					Console.ReadKey ();
 				}
 				try{
-					temp_normals.Add(normals[MathHelper.Clamp(((int)faces[i].Item3.X - lastIndex.Item3+offset), 0, normals.Count-1)]);
-					temp_normals.Add(normals[MathHelper.Clamp(((int)faces[i].Item3.Y - lastIndex.Item3+offset), 0, normals.Count-1)]);
-					temp_normals.Add(normals[MathHelper.Clamp(((int)faces[i].Item3.Z - lastIndex.Item3+offset), 0, normals.Count-1)]);
+					temp_normals.Add(normals[newfaces[i].Item3]);
 				} catch(Exception ex){
 					Console.WriteLine (ex.ToString ());
 					Console.WriteLine ("Indices Normal error: " + (faces[i].Item3.X - lastIndex.Item3));
 					Console.ReadKey ();
 				}
 				try{
-					temp_uv.Add(texs[MathHelper.Clamp(((int)faces[i].Item2.X - lastIndex.Item2+offset), 0, texs.Count-1)]);
-					temp_uv.Add(texs[MathHelper.Clamp(((int)faces[i].Item2.Y - lastIndex.Item2+offset), 0, texs.Count-1)]);
-					temp_uv.Add(texs[MathHelper.Clamp(((int)faces[i].Item2.Z - lastIndex.Item2+offset), 0, texs.Count-1)]);
+					temp_uv.Add(texs[newfaces[i].Item2]);
 				} catch(Exception ex){
 					Console.WriteLine (ex.ToString ());
 					Console.WriteLine ("Indices UV error: " + (faces[i].Item2.X - lastIndex.Item2));
 					Console.ReadKey ();
 				}
 			}
-			vol.vertices = temp_vertices.ToArray ();
-			vol.faces = new List<Tuple<Vector3, Vector3, Vector3>> (faces);
-			vol.colors = colors.ToArray();
-			vol.texturecoords = temp_uv.ToArray();
-			vol.normals = temp_normals.ToArray ();
+			//vol.vertices = temp_vertices.ToArray ();
+			//vol.faces = new List<Tuple<Vector3, Vector3, Vector3>> (faces);
+			//vol.colors = colors.ToArray();
+			//vol.texturecoords = temp_uv.ToArray();
+			//vol.normals = temp_normals.ToArray ();
 			vol.matuse = new Dictionary<int, string> (mu);
 			vol.materials = new List<Material> (mats);
 			vol.maxIndex = new Tuple<int, int, int> (max[0],max[1],max[2]);
+			foreach (var z in verts)
+				vol.orig_verts.Add (new JVector (z.X, z.Y, z.Z));
+			vol.newfaces = new List<Tuple<int, int, int>> (newfaces);
+            List<Vector3> new_vertices = new List<Vector3>();
+            List<Vector3> new_normals = new List<Vector3>();
+            List<Vector2> new_uvs = new List<Vector2>();
+            vol.indexVBO(temp_vertices, temp_uv, temp_normals, ref vol.indices, ref new_vertices, ref new_uvs, ref new_normals);
+            vol.vertices = new_vertices.ToArray();
+            vol.normals = new_normals.ToArray();
+            vol.colors = colors.ToArray();
+            vol.texturecoords = new_uvs.ToArray();
 			Console.WriteLine ("Last Vertex: " + vol.vertices[vol.vertices.Count()-1].X);
 			return vol;
 		}
+
+        void indexVBO(
+            List<Vector3> in_vertices,
+            List<Vector2> in_uvs,
+            List<Vector3> in_normals,
+            ref List<int> out_indices,
+            ref List<Vector3> out_vertices,
+            ref List<Vector2> out_uvs,
+            ref List<Vector3> out_normals
+            )
+        {
+            // For each input vertex
+            for ( int i=0; i<in_vertices.Count; i++ ){
+
+                    // Try to find a similar vertex in out_XXXX
+                    int index=0;
+                    bool found = getSimilarVertexIndex(in_vertices[i], in_uvs[i], in_normals[i], ref out_vertices, ref out_uvs, ref out_normals, ref index);
+
+                    if ( found ){ // A similar vertex is already in the VBO, use it instead !
+                            out_indices.Add( index );
+                    }else{ // If not, it needs to be added in the output data.
+                            out_vertices.Add( in_vertices[i]);
+                            out_uvs     .Add( in_uvs[i]);
+                            out_normals .Add( in_normals[i]);
+                            out_indices .Add( (int)out_vertices.Count - 1 );
+                    }
+            }
+        }
+        bool getSimilarVertexIndex( 
+            Vector3 in_vertex, 
+            Vector2 in_uv, 
+            Vector3 in_normal, 
+            ref List<Vector3> out_vertices,
+            ref List<Vector2> out_uvs,
+            ref List<Vector3> out_normals,
+            ref int result
+            )
+        {
+            // Lame linear search
+            for ( int i=0; i<out_vertices.Count; i++ ){
+                    if (
+                            is_near( in_vertex.X , out_vertices[i].X ) &&
+                            is_near( in_vertex.Y , out_vertices[i].Y ) &&
+                            is_near( in_vertex.Z , out_vertices[i].Z ) &&
+                            is_near( in_uv.X     , out_uvs     [i].X ) &&
+                            is_near( in_uv.Y     , out_uvs     [i].Y ) &&
+                            is_near( in_normal.X , out_normals [i].X ) &&
+                            is_near( in_normal.Y , out_normals [i].Y ) &&
+                            is_near( in_normal.Z , out_normals [i].Z )
+                    ){
+                            result = i;
+                            return true;
+                    }
+            }
+            // No other vertex could be used instead.
+            // Looks like we'll have to add it to the VBO.
+            return false;
+        }
+
+        bool is_near(float v1, float v2)
+        {
+            return Math.Abs(v1 - v2) < 0.01f;
+        }
 	}
 }

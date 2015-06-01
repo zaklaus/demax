@@ -33,6 +33,7 @@ using System.Drawing;
 using System.Linq;
 using OpenTK;
 using OpenTK.Graphics;
+using OpenTK.Platform;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Input;
 using Jitter;
@@ -68,8 +69,10 @@ namespace Demax
 		CRenderer renderer;
 		CInputManager inputManager;
 		CEntityManager entityManager;
-		Camera mainCamera;
+		Camera mainCamera = new Camera();
 		GameWindow gameRenderer;
+        public GLControl inlineRenderer;
+        public string type = "window";
 
 		/// <summary>
 		/// GameWindow class.
@@ -91,6 +94,9 @@ namespace Demax
 		{
 			get {
 				return mainCamera;
+			}
+			set {
+				mainCamera = value;
 			}
 		}
 
@@ -153,17 +159,37 @@ namespace Demax
 		public CCore()
 		{
 			Console.WriteLine ("DeMax Engine");
-
-
 			instance = this;
 			colsys = new CollisionSystemSAP ();
-			world = new World (colsys);
-			gameRenderer = new GameWindow(800,600,new GraphicsMode(32,24,8,4),"Demax",GameWindowFlags.Default);
-			mainCamera = new Camera ();
+            colsys.UseTriangleMeshNormal = false;
+            world = new World(colsys);
+            renderer = new CRenderer();
+            
 			entityManager = new CEntityManager ();
 			inputManager = new CInputManager ();
-			renderer = new CRenderer ();
+		}
 
+		/// <summary>
+		/// Run this instance.
+		/// </summary>
+		public void RunWindowed(int width, int height, GraphicsMode mode, string title, GameWindowFlags flags)
+		{
+			gameRenderer = new GameWindow(width, height, mode, title, flags);
+            type = "window";
+		}
+
+        public void RunInline(GLControl gl)
+        {
+            inlineRenderer = gl;
+            type = "inline";
+        }
+
+        /// <summary>
+        /// Starts the game.
+        /// </summary>
+		public void Start()
+		{
+            renderer.Init();
 			gameRenderer.Run (60.0f);
 		}
 	}

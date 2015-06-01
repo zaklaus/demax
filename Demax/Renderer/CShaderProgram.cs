@@ -73,6 +73,13 @@ namespace Demax
 			ProgramID = GL.CreateProgram();
 		}
 
+		public static string LoadShaderPointer(string name)
+		{
+			if(!CCore.GetCore().Renderer.shaders.ContainsKey(name))
+				CCore.GetCore().Renderer.shaders.Add(name, new CShaderProgram("vs_"+name+".glsl", "fs_"+name+".glsl", true));
+			return name;
+		}
+
 		public CShaderProgram(String vshader, String fshader, bool fromFile = false)
 		{
 			Console.WriteLine ("Initializing shaders...");

@@ -33,6 +33,12 @@ using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Input;
 using System.Collections.Generic;
+using Jitter.Collision;
+using Jitter;
+using Jitter.DataStructures;
+using Jitter.Dynamics;
+using Jitter.LinearMath;
+using System.Drawing.Imaging;
 
 namespace Demax
 {
@@ -72,6 +78,15 @@ namespace Demax
 		public override Vector2[] GetTextureCoords()
 		{
 			return new Vector2[]{};
+		}
+
+		public override void AddRigidbody()
+		{
+            var z = new RigidBody(new Jitter.Collision.Shapes.BoxShape(Scale.X, Scale.Y, Scale.Z));
+            body.Add(z);
+			z.Position = new JVector(Position.X,Position.Y,Position.Z);
+			//body.Orientation = (JVector)Rotation;
+			CCore.GetCore().world.AddBody(z);
 		}
 
 		public override int[] GetIndices(int offset = 0)

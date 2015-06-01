@@ -54,7 +54,16 @@ namespace Demax
 		/// </summary>
 		public CCore game;
 
+		/// <summary>
+		/// The camera.
+		/// </summary>
+		public Camera camera = new Camera();
 
+
+		public void FocusCamera()
+		{
+			CCore.GetCore ().MainCamera = camera;
+		}
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Demax.CEntity"/> class.

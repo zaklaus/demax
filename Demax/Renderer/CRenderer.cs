@@ -50,14 +50,16 @@ namespace Demax
 	public class CRenderer
 	{
 		GameWindow gameRenderer;
+        GLControl inlineRenderer;
 		CCore core;
 		Camera mainCamera;
+        public GUIManager guiManager = new GUIManager();
 
 		bool updated, onDemand, loaded = false;
 		float time = 0f;
 		float deltaTime, lastTime = 0.0f;
 		float zeroKill = -100.0f;
-
+		Matrix4 viewmodel, projection = Matrix4.Identity;
 		/// <summary>
 		/// Gets the time.
 		/// </summary>
@@ -85,7 +87,7 @@ namespace Demax
 			zeroKill = k;
 		}
 
-		Dictionary<string, CShaderProgram> shaders = new Dictionary<string, CShaderProgram>();
+		public Dictionary<string, CShaderProgram> shaders = new Dictionary<string, CShaderProgram>();
 		public Dictionary<string, int> textures = new Dictionary<string, int>();
 
 		string activeShader = "default";
@@ -102,48 +104,17 @@ namespace Demax
 		void initTest()
 		{
 			GL.GenBuffers(1, out ibo_elements);
-			CCore.GetCore ().MainCamera.Move (0, 10f, 0);
-
-			shaders.Add("default", new CShaderProgram("vs.glsl", "fs.glsl", true));
-			shaders.Add("textured", new CShaderProgram("vs_tex.glsl", "fs_tex.glsl", true));
-			shaders.Add("lighted", new CShaderProgram("vs_light.glsl", "fs_light.glsl", true));
-
-			activeShader = "lighted";
-
-			var cubes = core.EntityManager.CreateEntity ("Cubes");
-			cubes.Transform.Position = new Vector3 (0, -6, -20);
-			cubes.AddScript ("cubes.py");
-
-//			loadImage (Path.Combine ("Textures", "img01.jpg"));
-//			loadImage (Path.Combine ("Textures", "img02.jpg"));
-//			loadImage (Path.Combine ("Textures", "img03.jpg"));
-//
-//			Random rand = new Random ();
-//
-//			for (int i = 0; i < 30; i++) {
-//				TexturedCube fall = new TexturedCube(cubes);
-//				fall.Position = new Vector3 ((float)rand.NextDouble()*50f - 25f, (float)rand.NextDouble()*80f + 5f, (float)rand.NextDouble()*50f - 25f);
-//				fall.TextureID = (rand.Next(0,100) > 50) ? textures ["img02.jpg"] : textures ["img01.jpg"];
-//				fall.Scale = new Vector3 (5f, 5f, 5f);
-//				fall.AddRigidbody ();
-//				cubes.AddModel (fall);
-//			}
-//
-//			TexturedCube floor = new TexturedCube(cubes);
-//			floor.Position = new Vector3 (0, 0, 0);
-//			floor.Scale = new Vector3 (100, 1, 100);
-//			floor.TextureID = textures ["img03.jpg"];
-//			floor.isStatic = true;
-//			floor.AddRigidbody ();
-//			floor.body.AffectedByGravity = false;
-//			floor.body.IsStatic = true;
-//			cubes.AddModel (floor);
 		}
 
 
 		void updateTest(Volume v)
 		{
 				try{
+				
+				v.CalculateModelMatrix ();
+				v.ViewProjectionMatrix = projection;
+				v.ViewModelMatrix = viewmodel;
+				v.ModelViewProjectionMatrix = v.ModelMatrix * v.ViewModelMatrix * v.ViewProjectionMatrix;
 				int vertcount = 0;
 
 				//foreach(CEntity en in core.EntityManager.GetEntities())
@@ -177,6 +148,8 @@ namespace Demax
 				normdata = norms.ToArray ();
 				coldata = colors.ToArray();
 				texcoorddata = texcoords.ToArray();
+
+				activeShader = CShaderProgram.LoadShaderPointer(v.Shader);
 
 				GL.BindBuffer(BufferTarget.ArrayBuffer, shaders[activeShader].GetBuffer("vPosition"));
 
@@ -213,16 +186,14 @@ namespace Demax
 			catch(Exception ex){
 				Console.WriteLine (ex.ToString ());
 			}
-			GL.ClearColor (Color.CornflowerBlue);
-			GL.PointSize (5f);
 		}
 
 		/// <summary>
 		/// Flush this instance.
 		/// </summary>
-		public void Flush()
+		public void Flush(Volume e)
 		{
-			//updateTest ();
+			updateTest (e);
 		}
 
 		/// <summary>
@@ -231,25 +202,42 @@ namespace Demax
 		public CRenderer ()
 		{
 			core = CCore.GetCore ();
-			gameRenderer = core.GameRenderer;
-			mainCamera = core.MainCamera;
-
-
-			gameRenderer.Load += OnLoad;
-			gameRenderer.Resize += OnResize;
-			gameRenderer.UpdateFrame += OnUpdateFrame;
-			gameRenderer.RenderFrame += OnRenderFrame;
-			gameRenderer.FocusedChanged += (object sender, EventArgs e) => { core.InputManager.Focused = !core.InputManager.Focused; };
-
-			gameRenderer.KeyDown += core.InputManager.OnKeyDown;
-			gameRenderer.KeyUp += core.InputManager.OnKeyUp;
-			gameRenderer.KeyPress += core.InputManager.OnKeyPress;
 		}
+
+        public void Init()
+        {
+            gameRenderer = core.GameRenderer;
+            mainCamera = core.MainCamera;
+            inlineRenderer = core.inlineRenderer;
+
+            if (core.type == "window")
+            {
+                gameRenderer.Load += OnLoad;
+                gameRenderer.Resize += OnResize;
+                gameRenderer.UpdateFrame += OnUpdateFrame;
+                gameRenderer.RenderFrame += OnRenderFrame;
+                gameRenderer.FocusedChanged += gameRenderer_FocusedChanged;
+
+                gameRenderer.KeyDown += core.InputManager.OnKeyDown;
+                gameRenderer.KeyUp += core.InputManager.OnKeyUp;
+                gameRenderer.KeyPress += core.InputManager.OnKeyPress;
+            }
+            else if(core.type == "inline")
+            {
+        
+            }
+        }
+
+        public void gameRenderer_FocusedChanged(object sender, EventArgs e)
+        {
+            core.InputManager.Focused = !core.InputManager.Focused;
+        }
+
 		static class RequiredFeatures
 		{
 			public static readonly Version FramebufferObject = new Version(3, 0);
 		}
-		void OnLoad(object sender, EventArgs e)
+		public void OnLoad(object sender, EventArgs e)
 		{
 			gameRenderer.VSync = VSyncMode.On;
 			GL.Enable (EnableCap.DepthTest);
@@ -283,7 +271,7 @@ namespace Demax
 			loaded = true;
 		}
 
-		void OnResize(object sender, EventArgs e)
+        public void OnResize(object sender, EventArgs e)
 		{
 			GL.Viewport (gameRenderer.ClientRectangle.X, gameRenderer.ClientRectangle.Y, gameRenderer.ClientRectangle.Width, gameRenderer.ClientRectangle.Height);
 
@@ -298,7 +286,7 @@ namespace Demax
 			this.onDemand = state;
 		}
 
-		void OnUpdateFrame(object sender, FrameEventArgs e)
+        public void OnUpdateFrame(object sender, FrameEventArgs e)
 		{
 
 			//df.DoFall ();
@@ -307,18 +295,20 @@ namespace Demax
 
 			foreach (CEntity en in core.EntityManager.GetEntities()) {
 				foreach (Volume v in en.GetModels()) {
-					if (v.body != null && !v.body.IsStatic) {
-						v.Position = new Vector3 (v.body.Position.X, v.body.Position.Y, v.body.Position.Z);
-						v.Rotation = v.JMatrixToMatrix (v.body.Orientation);
+                    List<RigidBody> b = new List<RigidBody>(v.body);
+                    foreach(var r in b)
+					if (v.body != null && !r.IsStatic) {
+						v.Position = new Vector3 (r.Position.X, r.Position.Y, r.Position.Z);
+						v.Rotation = v.JMatrixToMatrix (r.Orientation);
 
 						if (v.Position.Y < zeroKill) {
 							if (v.killOnZero) {
 								v.Destroy ();
 							} else {
-								v.RemoveRigidbody ();
+								/*v.RemoveRigidbody ();
 								v.Position = Vector3.Zero;
 								v.Rotation = Matrix4.Identity;
-								v.isVisible = false;
+								v.isVisible = false;*/
 							}
 						}
 					}
@@ -335,17 +325,11 @@ namespace Demax
 				}
 			}
 
-			core.MainCamera.UpdateCamera ();
-
-			core.InputManager.TickCursor ();
-
 			//if(onDemand || shouldFlush)
 				//updateTest ();
 
-
-			// Modelview Buffer
-			Matrix4 viewmodel = mainCamera.GetViewMatrix();
-			Matrix4 projection = Matrix4.CreatePerspectiveFieldOfView ((float)Math.PI / 4, gameRenderer.Width / (float)gameRenderer.Height, 0.1f, 500.0f);
+			viewmodel = mainCamera.GetViewMatrix();
+			projection = Matrix4.CreatePerspectiveFieldOfView ((float)Math.PI / 4, gameRenderer.Width / (float)gameRenderer.Height, CCore.GetCore().MainCamera.nearPlane, CCore.GetCore().MainCamera.farPlane);
 
 
 			foreach (CEntity en in core.EntityManager.GetEntities()) {
@@ -356,6 +340,10 @@ namespace Demax
 					v.ModelViewProjectionMatrix = v.ModelMatrix * v.ViewModelMatrix * v.ViewProjectionMatrix;
 				}
 			}
+			// Modelview Buffer
+
+			GL.ClearColor (Color.CornflowerBlue);
+			GL.PointSize (5f);
 
 			updated = true;
 			time += (float)e.Time;
@@ -363,7 +351,7 @@ namespace Demax
 			CScript.BroadcastEvent ("OnUpdate");
 		}
 
-		void OnRenderFrame(object sender, FrameEventArgs e)
+        public void OnRenderFrame(object sender, FrameEventArgs e)
 		{
 			if (updated && loaded) {
 				updated = false;
@@ -373,13 +361,6 @@ namespace Demax
 
 			GL.Clear (ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-			//Matrix4 modelview = Matrix4.LookAt (Vector3.Zero, Vector3.UnitZ, Vector3.UnitY);
-
-
-			GL.UseProgram (shaders [activeShader].ProgramID);
-
-			shaders[activeShader].EnableVertexAttribArrays();
-
 			int indiceat = 0;
 
 			foreach (CEntity entity in core.EntityManager.GetEntities())
@@ -388,6 +369,9 @@ namespace Demax
 				{
 					int i=0;
 					foreach (Volume m in v.meshes) {
+						GL.UseProgram (shaders [CShaderProgram.LoadShaderPointer(m.Shader)].ProgramID);
+						shaders[CShaderProgram.LoadShaderPointer(m.Shader)].EnableVertexAttribArrays();
+
 						updateTest (m);
 						if (!m.isVisible) {
 							indiceat += m.IndiceCount;
@@ -415,20 +399,22 @@ namespace Demax
 							GL.Uniform1 (shaders [activeShader].GetAttribute ("maintexture"), tex);
 						}
 						try{
-							if(v.materials.Count == 0)
-								GL.DrawElements (PrimitiveType.Triangles, m.IndiceCount, DrawElementsType.UnsignedInt, indiceat * sizeof(uint));
-							else
-								GL.DrawArrays(PrimitiveType.Triangles, 0, m.IndiceCount);
+							//if(v.materials.Count == 0)
+								GL.DrawElements (PrimitiveType.Triangles, m.IndiceCount, DrawElementsType.UnsignedInt, 0);
+							//else
+								//GL.DrawArrays(PrimitiveType.Triangles, 0, m.IndiceCount);
 						} catch(Exception ex){
 							Console.WriteLine (ex.ToString ());
 						}
 						indiceat += m.IndiceCount;
 						i++;
+
+						shaders[CShaderProgram.LoadShaderPointer(m.Shader)].DisableVertexAttribArrays();
 					}
 				}
 			}
 
-			shaders[activeShader].DisableVertexAttribArrays();
+            //guiManager.Draw();
 
 			gameRenderer.SwapBuffers();
 
@@ -465,8 +451,6 @@ namespace Demax
 
 			return axis;
 		}
-
-
-	}
+    }
 }
 

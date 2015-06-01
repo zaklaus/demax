@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -62,6 +62,7 @@
     <Reference Include="Jitter">
       <HintPath>..\OpenTK\Jitter.dll</HintPath>
     </Reference>
+    <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -69,6 +70,7 @@
     <Compile Include="Logic\CInputManager.cs" />
     <Compile Include="Renderer\CRenderer.cs" />
     <Compile Include="Renderer\CShading.cs" />
+    <Compile Include="Renderer\GUIManager.cs" />
     <Compile Include="Renderer\Volume.cs" />
     <Compile Include="Logic\CEntity.cs" />
     <Compile Include="Logic\CEntityManager.cs" />
@@ -87,26 +89,9 @@
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <Folder Include="Core\" />
-    <Folder Include="Logic\" />
-    <Folder Include="Renderer\" />
-    <Folder Include="Tools\" />
     <Folder Include="Network\" />
-    <Folder Include="Renderer\Primitives\" />
-    <Folder Include="Shaders\" />
-    <Folder Include="Physics\" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="cubes.py">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Shaders\fs.glsl">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Shaders\vs.glsl">
-      <DeployService-Deploy>True</DeployService-Deploy>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Include="Shaders\vs_tex.glsl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -117,6 +102,13 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="Shaders\vs_light.glsl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Shaders\vs_texture.glsl">
+      <DeployService-Deploy>True</DeployService-Deploy>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Shaders\fs_texture.glsl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

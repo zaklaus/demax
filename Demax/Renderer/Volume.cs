@@ -112,6 +112,10 @@ namespace Demax
 		public Matrix4 Rotation = Matrix4.Identity;
         public Vector3 Scale = Vector3.One;
 		public CEntity me;
+        public Vector3[] vertices;
+        public Vector3[] colors;
+        public Vector3[] normals;
+        public Vector2[] texturecoords;
 		public bool isStatic = false;
 		public bool isVisible = true;
 		public virtual int VertCount { get; set; }
@@ -126,17 +130,17 @@ namespace Demax
         public Matrix4 ViewProjectionMatrix = Matrix4.Identity;
         public Matrix4 ModelViewProjectionMatrix = Matrix4.Identity;
 		public Matrix4 ViewModelMatrix = Matrix4.Identity;
-		public RigidBody body;
+		public List<RigidBody> body = new List<RigidBody>();
+        public List<int> indices = new List<int>();
 		public List<Volume> meshes = new List<Volume>();
 		public Dictionary<int, string> matuse = new Dictionary<int, string> ();
 		public List<Material> materials = new List<Material> ();
 		public bool markedForDestroy = false;
 		public Tuple<int,int,int> maxIndex = new Tuple<int, int, int> (0,0,0);
-
+		public string Shader = "light";
 		public Volume(CEntity x)
 		{
 			me = x;
-			x.game.GetCell().Flush ();
 		}
 
 		public void LoadTexture(string file)
@@ -174,14 +178,17 @@ namespace Demax
 
 		public void Destroy()
 		{
-			this.RemoveRigidbody ();
+            List<RigidBody> b = new List<RigidBody>(body);
+            foreach(var r in b)
+			    this.RemoveRigidbody (r);
 			this.markedForDestroy = true;
 		}
 
 		public void AddForce(Vector3 f)
 		{
 			if (body != null) {
-				body.AddForce (new JVector (f.X, f.Y, f.Z));
+                foreach(var r in body)
+				    r.AddForce (new JVector (f.X, f.Y, f.Z));
 			}
 		}
 
@@ -211,21 +218,26 @@ namespace Demax
 			Position = x;
 
 			if(body!=null)
-				body.Position = new JVector(Position.X+me.RecursiveTransform().Position.X,Position.Y+me.RecursiveTransform().Position.Y,Position.Z+me.RecursiveTransform().Position.Z);
+                foreach(var r in body)
+				r.Position = new JVector(Position.X+me.RecursiveTransform().Position.X,Position.Y+me.RecursiveTransform().Position.Y,Position.Z+me.RecursiveTransform().Position.Z);
 		}
 
 		public void SetStatic(bool state)
 		{
 			if (body != null) {
-				body.AffectedByGravity = !state;
-				body.IsStatic = state;
+                foreach (var r in body)
+                {
+                    r.AffectedByGravity = !state;
+                    r.IsStatic = state;
+                }
 			}
 		}
 
 		public void ZeroGravity(bool state)
 		{
 			if (body != null)
-				body.AffectedByGravity = !state;
+                foreach (var r in body)
+				r.AffectedByGravity = !state;
 		}
 
 		public void SetRotation(Vector3 x)
@@ -233,7 +245,8 @@ namespace Demax
 			Rotation = Matrix4.CreateRotationX(x.X) * Matrix4.CreateRotationY(x.Y) * Matrix4.CreateRotationZ(x.Z);
 
 			if (body != null)
-				body.Orientation = MatrixToJMatrix (Rotation);
+                foreach (var r in body)
+				r.Orientation = MatrixToJMatrix (Rotation);
 		}
 
 		public void SetRotation(Matrix4 x)
@@ -241,7 +254,8 @@ namespace Demax
 			Rotation = x;
 
 			if (body != null)
-				body.Orientation = MatrixToJMatrix (Rotation);
+                foreach (var r in body)
+				r.Orientation = MatrixToJMatrix (Rotation);
 		}
 
 
@@ -250,7 +264,8 @@ namespace Demax
 			Scale = x;
 
 			if(body!=null)
-				body.Shape = new Jitter.Collision.Shapes.BoxShape(Scale.X+me.RecursiveTransform().Scale.X,Scale.Y+me.RecursiveTransform().Scale.Y,Scale.Z+me.RecursiveTransform().Scale.Z);
+                foreach (var r in body)
+				r.Shape = new Jitter.Collision.Shapes.BoxShape(Scale.X+me.RecursiveTransform().Scale.X,Scale.Y+me.RecursiveTransform().Scale.Y,Scale.Z+me.RecursiveTransform().Scale.Z);
 		}
 
 		/// <summary>
@@ -307,20 +322,20 @@ namespace Demax
 		/// <summary>
 		/// Adds the rigidbody.
 		/// </summary>
-		public void AddRigidbody()
-		{
-			body = new RigidBody (new Jitter.Collision.Shapes.BoxShape (Scale.X, Scale.Y, Scale.Z));
-			body.Position = new JVector(Position.X,Position.Y,Position.Z);
-			//body.Orientation = (JVector)Rotation;
-			CCore.GetCore().world.AddBody(body);
-		}
+		public abstract void AddRigidbody();
+
 
 		/// <summary>
 		/// Removes the rigidbody.
 		/// </summary>
-		public void RemoveRigidbody()
+		public void RemoveRigidbody(RigidBody id)
 		{
-			CCore.GetCore ().world.RemoveBody (body);
+            try
+            {
+                CCore.GetCore().world.RemoveBody(id);
+                body.Remove(id);
+            }
+            catch { }
 		}
 
 		public void CalculateModelMatrix()
