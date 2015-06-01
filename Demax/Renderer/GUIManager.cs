@@ -49,32 +49,69 @@ using Jitter.LinearMath;
 
 namespace Demax
 {
+    public class Rect
+    {
+        public List<Vector3> vertices = new System.Collections.Generic.List<Vector3>();
+        public int[] indices = new int[]{0,1,2,0,2,3};
+        public Rect(int x, int y, int x2, int y2)
+        {
+            vertices.Add(new Vector3(-1 + x, -1 + y, 0));
+            vertices.Add(new Vector3(-1 + x, 1 - y2, 0));
+            vertices.Add(new Vector3(1 - x2, 1 - y2, 0));
+            vertices.Add(new Vector3(1 - x2, -1 + y, 0));
+        }
+    }
+    public class Control
+    {
+        public Rect rect;
+        
+        public Control(Rect r)
+        {
+            rect = r;
+        }
+    }
+
     public class GUIManager
     {
         CRenderer r;
+        public List<Control> controls = new System.Collections.Generic.List<Control>();
+        int ibo_elements = 0;
+
+        public GUIManager()
+        {
+            r = CCore.GetCore().Renderer;
+        }
+
         public void Draw()
         {
             r = CCore.GetCore().Renderer;
-            
-            List<Vector3> a = new System.Collections.Generic.List<Vector3>();
-            a.Add(new Vector3(-1,-1,0));
-            a.Add(new Vector3(1, -1, 0));
-            a.Add(new Vector3(1, 1, 0));
-            a.Add(new Vector3(-1, 1, 0));
+            if(ibo_elements==0)
+                GL.GenBuffers(1, out ibo_elements);
+            foreach (var x in controls)
+            {
+                List<Vector3> a = new System.Collections.Generic.List<Vector3>(x.rect.vertices);
 
-            GL.BindBuffer(BufferTarget.ArrayBuffer, r.shaders[CShaderProgram.LoadShaderPointer("gui_color")].GetBuffer("vPosition"));
 
-            GL.BufferData<Vector3>(BufferTarget.ArrayBuffer, (IntPtr)(a.ToArray().Length * Vector3.SizeInBytes), a.ToArray(), BufferUsageHint.StaticDraw);
-            GL.VertexAttribPointer(r.shaders[CShaderProgram.LoadShaderPointer("gui_color")].GetAttribute("vPosition"), 3, VertexAttribPointerType.Float, false, 0, 0);
+                GL.BindBuffer(BufferTarget.ElementArrayBuffer, ibo_elements);
+                GL.BufferData<int>(BufferTarget.ElementArrayBuffer,
+                    (IntPtr)(x.rect.indices.Length * sizeof(int)),
+                    x.rect.indices,
+                    BufferUsageHint.StaticDraw);
 
-            GL.BindBuffer(BufferTarget.ArrayBuffer, r.shaders[CShaderProgram.LoadShaderPointer("gui_color")].GetBuffer("vColor"));
+                GL.BindBuffer(BufferTarget.ArrayBuffer, r.shaders[CShaderProgram.LoadShaderPointer("gui_color")].GetBuffer("vPosition"));
 
-            GL.BufferData<Vector3>(BufferTarget.ArrayBuffer, (IntPtr)(a.ToArray().Length * Vector3.SizeInBytes), a.ToArray(), BufferUsageHint.StaticDraw);
-            GL.VertexAttribPointer(r.shaders[CShaderProgram.LoadShaderPointer("gui_color")].GetAttribute("vColor"), 3, VertexAttribPointerType.Float, false, 0, 0);
+                GL.BufferData<Vector3>(BufferTarget.ArrayBuffer, (IntPtr)(a.ToArray().Length * Vector3.SizeInBytes), a.ToArray(), BufferUsageHint.StaticDraw);
+                GL.VertexAttribPointer(r.shaders[CShaderProgram.LoadShaderPointer("gui_color")].GetAttribute("vPosition"), 3, VertexAttribPointerType.Float, false, 0, 0);
 
-            r.shaders[CShaderProgram.LoadShaderPointer("gui_color")].EnableVertexAttribArrays();
-            GL.DrawArrays(PrimitiveType.Triangles, 0, 4);
-            r.shaders[CShaderProgram.LoadShaderPointer("gui_color")].DisableVertexAttribArrays();
+                GL.BindBuffer(BufferTarget.ArrayBuffer, r.shaders[CShaderProgram.LoadShaderPointer("gui_color")].GetBuffer("vColor"));
+
+                GL.BufferData<Vector3>(BufferTarget.ArrayBuffer, (IntPtr)(a.ToArray().Length * Vector3.SizeInBytes), a.ToArray(), BufferUsageHint.StaticDraw);
+                GL.VertexAttribPointer(r.shaders[CShaderProgram.LoadShaderPointer("gui_color")].GetAttribute("vColor"), 3, VertexAttribPointerType.Float, false, 0, 0);
+
+                r.shaders[CShaderProgram.LoadShaderPointer("gui_color")].EnableVertexAttribArrays();
+                GL.DrawElements(PrimitiveType.Triangles, x.rect.indices.Length, DrawElementsType.UnsignedInt, x.rect.indices);
+                r.shaders[CShaderProgram.LoadShaderPointer("gui_color")].DisableVertexAttribArrays();
+            }
         }
     }
 }

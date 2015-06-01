@@ -414,7 +414,7 @@ namespace Demax
 				}
 			}
 
-            //guiManager.Draw();
+            guiManager.Draw();
 
 			gameRenderer.SwapBuffers();
 

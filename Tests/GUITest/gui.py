@@ -1,5 +1,5 @@
 ﻿def OnStart():
-	pass
+	gui.controls.Add(Control(Rect(0,0,0,0)))
 
 def OnUpdate():
 	pass

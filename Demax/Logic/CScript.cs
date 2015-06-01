@@ -98,6 +98,7 @@ namespace Demax
 			Console.WriteLine (DateTime.Now - time);
 			m_scope.SetVariable ("cam", e.game.MainCamera);
 			m_scope.SetVariable ("game", e.game);
+            m_scope.SetVariable("gui", e.game.Renderer.guiManager);
 			m_scope.SetVariable ("cell", e.game.Renderer);
 
 			m_scope.SetVariable ("input", e.game.InputManager);
