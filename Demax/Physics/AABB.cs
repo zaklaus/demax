@@ -31,6 +31,12 @@ namespace Demax
 {
 	public static class AABB
 	{
+        /// <summary>
+        /// Checks if a intersects with b in 3D space.
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
 		public static int Intersect3D(Vector3[] a, Vector3[] b)
 		{
 			Vector3[] Min = new Vector3[]{Vector3.Zero,Vector3.Zero};
@@ -56,7 +62,7 @@ namespace Demax
 			if (Max [0].X >= Min [1].X && Min [0].X <= Max [1].X &&
 				Max [0].Y >= Min [1].Y && Min [0].Y <= Max [1].Y &&
 			   Min [0].Z <= Max [1].Z && Max [0].Z >= Min [1].Z) {
-				//Console.WriteLine ("AABB");
+				//CLog.WriteLine ("AABB");
 				return 1;
 			}
 			//} else if ()

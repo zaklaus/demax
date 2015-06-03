@@ -59,7 +59,9 @@ namespace Demax
 		/// </summary>
 		public Camera camera = new Camera();
 
-
+        /// <summary>
+        /// Sets entity's camera as primary one.
+        /// </summary>
 		public void FocusCamera()
 		{
 			CCore.GetCore ().MainCamera = camera;
@@ -120,6 +122,12 @@ namespace Demax
 			models.Add (vol);
 		}
 
+        /// <summary>
+        /// Creates new entity and adds it to our entity pool.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="tag"></param>
+        /// <returns></returns>
 		public CEntity CreateEntity(string name="NewChild",string tag="")
 		{
 			CEntity e = new CEntity(name,tag,this);
@@ -218,6 +226,10 @@ namespace Demax
 			return ret;
 		}
 
+        /// <summary>
+        /// Recursively retrieves Transform of entities in hierarchy.
+        /// </summary>
+        /// <returns></returns>
 		public CTransform RecursiveTransform()
 		{
 			CEntity ret = parent;

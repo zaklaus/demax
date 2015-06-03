@@ -31,6 +31,9 @@ using OpenTK;
 
 namespace Demax
 {
+    /// <summary>
+    /// Obsolete. Pre-Jitter physics script for handling falling objects. Should be avoided!
+    /// </summary>
 	public class DownFall
 	{
 		CCore core;

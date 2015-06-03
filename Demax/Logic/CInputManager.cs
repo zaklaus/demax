@@ -130,7 +130,7 @@ namespace Demax
 		/// <param name="e">E.</param>
 		public void OnKeyDown(object sender, KeyboardKeyEventArgs e)
 		{
-			//Console.WriteLine ("Key Down: " + e.Key.ToString ());
+			//CLog.WriteLine ("Key Down: " + e.Key.ToString ());
 			try{
 				keys [e.Key] = true;
 			}
@@ -146,7 +146,7 @@ namespace Demax
 		/// <param name="e">E.</param>
 		public void OnKeyUp(object sender, KeyboardKeyEventArgs e)
 		{
-			//Console.WriteLine ("Key Up: " + e.Key.ToString ());
+			//CLog.WriteLine ("Key Up: " + e.Key.ToString ());
 			try{
 				keys [e.Key] = false;
 			}

@@ -82,7 +82,7 @@ namespace Demax
 
 		public CShaderProgram(String vshader, String fshader, bool fromFile = false)
 		{
-			Console.WriteLine ("Initializing shaders...");
+			CLog.WriteLine ("Initializing shaders...");
 			ProgramID = GL.CreateProgram();
 
 			if (fromFile)
@@ -99,7 +99,7 @@ namespace Demax
 			Link();
 			GenBuffers();
 
-			Console.WriteLine ("Shaders compiled!");
+			CLog.WriteLine ("Shaders compiled!");
 		}
 
 		void loadShader(string code, ShaderType type, out int address)
@@ -108,7 +108,7 @@ namespace Demax
 			GL.ShaderSource (address, code);
 			GL.CompileShader (address);
 			GL.AttachShader (ProgramID, address);
-			Console.WriteLine (GL.GetShaderInfoLog (address));
+			CLog.WriteLine (GL.GetShaderInfoLog (address));
 		}
 
 		/// <summary>
@@ -156,7 +156,7 @@ namespace Demax
 			GL.LinkProgram (ProgramID);
 			GL.UseProgram (ProgramID);
  
-            Console.WriteLine(GL.GetProgramInfoLog(ProgramID));
+            CLog.WriteLine(GL.GetProgramInfoLog(ProgramID));
  
             GL.GetProgram(ProgramID, ProgramParameter.ActiveAttributes, out AttributeCount);
             GL.GetProgram(ProgramID, ProgramParameter.ActiveUniforms, out UniformCount);

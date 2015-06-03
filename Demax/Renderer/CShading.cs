@@ -60,7 +60,7 @@
 //			pgmID = GL.CreateProgram ();
 //			LoadShader ("vs.glsl", ShaderType.VertexShader, pgmID, out vsID);
 //			LoadShader ("fs.glsl", ShaderType.FragmentShader, pgmID, out fsID);
-//			Console.WriteLine (GL.GetProgramInfoLog (pgmID));
+//			CLog.WriteLine (GL.GetProgramInfoLog (pgmID));
 //			GL.LinkProgram (pgmID);
 //			GL.UseProgram (pgmID);
 //		}
@@ -70,7 +70,7 @@
 //			address = GL.CreateShader (type);
 //
 //			if (!File.Exists (filename)) {
-//				Console.WriteLine ("Shader Error: shader not found; " + filename);
+//				CLog.WriteLine ("Shader Error: shader not found; " + filename);
 //			}
 //
 //			using (StreamReader sr = new StreamReader (filename)) {
@@ -78,7 +78,7 @@
 //			}
 //			GL.CompileShader (address);
 //			GL.AttachShader (program, address);
-//			Console.WriteLine (GL.GetShaderInfoLog (address) + " PID: "+pgmID);
+//			CLog.WriteLine (GL.GetShaderInfoLog (address) + " PID: "+pgmID);
 //
 //		}
 //	}

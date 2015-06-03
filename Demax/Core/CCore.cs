@@ -63,7 +63,7 @@ namespace Demax
 		/// <returns><c>true</c> if this instance is alive; otherwise, <c>false</c>.</returns>
 		public void IsAlive()
 		{
-			Console.WriteLine ("Core is alive...");
+			CLog.WriteLine ("Core is alive...");
 		}
 
 		CRenderer renderer;
@@ -148,9 +148,13 @@ namespace Demax
 			gameRenderer.Close ();
 
 		}
+
+        /// <summary>
+        /// Handles physics for us;
+        /// </summary>
 		public CollisionSystem colsys;
 		public World world;
-
+        ///
 
 
 		/// <summary>
@@ -158,7 +162,7 @@ namespace Demax
 		/// </summary>
 		public CCore()
 		{
-			Console.WriteLine ("DeMax Engine");
+			CLog.WriteLine ("DeMax Engine");
 			instance = this;
 			colsys = new CollisionSystemSAP ();
             colsys.UseTriangleMeshNormal = false;
