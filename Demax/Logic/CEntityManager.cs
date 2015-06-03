@@ -54,7 +54,7 @@ namespace Demax
 		{
 			CEntity e = new CEntity(name,tag);
 			entities.Add(e);
-			Console.WriteLine ("Entity: " + name);
+			CLog.WriteLine ("Entity: " + name);
 
 			return e;
 		}

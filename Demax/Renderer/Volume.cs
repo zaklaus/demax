@@ -57,7 +57,7 @@ namespace Demax
 				else
 					this.TextureID = CCore.GetCore().Renderer.textures[file];
 			} catch (Exception ex) {
-				Console.WriteLine ("IO Error: "+ ex.ToString ());
+				CLog.WriteLine ("IO Error: "+ ex.ToString ());
 			}
 
 		}
@@ -153,7 +153,7 @@ namespace Demax
 				else
 					this.TextureID = CCore.GetCore().Renderer.textures[file];
 			} catch (Exception ex) {
-				Console.WriteLine ("IO Error: "+ ex.ToString ());
+				CLog.WriteLine ("IO Error: "+ ex.ToString ());
 			}
 
 		}

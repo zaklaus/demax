@@ -86,16 +86,24 @@ namespace Demax
 		public CScript (string filename, CEntity e)
 		{
 			var time = DateTime.Now;
+
+            // Checks if file exists. Halts on missing file.
+            //
 			if (!File.Exists (filename)) {
 				return;
 			}
 			entity = e;
 
+
+            // Creates our scope for script.
+            //
 			m_scope = m_engine.CreateScope();
 			m_scope.ImportModule ("clr");
 			m_scope.SetVariable ("me", entity);
 			var game = CCore.GetCore ();
-			Console.WriteLine (DateTime.Now - time);
+			
+            // Sets some essential variables for our script.
+            //
 			m_scope.SetVariable ("cam", e.game.MainCamera);
 			m_scope.SetVariable ("game", e.game);
             m_scope.SetVariable("gui", e.game.Renderer.guiManager);
@@ -103,8 +111,12 @@ namespace Demax
 
 			m_scope.SetVariable ("input", e.game.InputManager);
 
+            // Build or use cached key symbols.
+            //
 			LoadKeys (this);
 
+            // Imports several libraries for our script.
+            //
 			m_engine.Execute ("import clr", m_scope);
 			m_engine.Execute ("clr.AddReference(\"Demax\")", m_scope);
 			m_engine.Execute ("clr.AddReference(\"OpenTK\")", m_scope);
@@ -115,24 +127,28 @@ namespace Demax
 			m_engine.Execute ("from System.IO import *", m_scope);
 			m_engine.Execute ("from OpenTK import *", m_scope);
 			src = m_engine.CreateScriptSourceFromFile (filename);
-			try{
-				
-			src.Execute(m_scope);
 			
+            // Executes our script and calls our OnStart event.
+            try{	
+			    src.Execute(m_scope);
+                var OnStart = m_scope.GetVariable("OnStart");
+                try
+                {
+                    var result = OnStart();
+                }
+                catch (Exception ex)
+                {
+                    CLog.WriteLine("Logic Error: " + ex.ToString());
+                    invalid = true;
+                }
 			}
 			catch(Exception ex){
-				Console.WriteLine ("Logic Error: " + ex.ToString ());
+				CLog.WriteLine ("Logic Error: " + ex.ToString ());
 				return;
 			}
-			var OnStart = m_scope.GetVariable ("OnStart");
+			
 
-			try{
-				var result = OnStart ();
-			}
-			catch(Exception ex) {
-				Console.WriteLine ("Logic Error: " + ex.ToString ());
-				invalid = true;
-			}
+			
 		}
 
 		/// <summary>
@@ -166,7 +182,7 @@ namespace Demax
 						return;
 				
 					if(lasterror!=ex.ToString())
-						Console.WriteLine ("Logic Error: " + ex.ToString ());
+						CLog.WriteLine ("Logic Error: " + ex.ToString ());
 
 					
 					invalid = true;

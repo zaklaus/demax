@@ -152,7 +152,7 @@ namespace Demax
 					{
 						if (line.StartsWith ("mtllib ")) {
 							String temp = line.Substring (7);
-							Console.WriteLine("Model MTL: "+temp);
+							CLog.WriteLine("Model MTL: "+temp);
 							try
 							{
 								using (StreamReader reader2 = new StreamReader(new FileStream(Path.Combine(Path.GetDirectoryName(filename),temp), FileMode.Open, FileAccess.Read)))
@@ -179,18 +179,18 @@ namespace Demax
 
 											obj.materials.Add(new Material(mname,Path.Combine(Path.GetDirectoryName(filename),texpath)));
 
-											Console.WriteLine (mtemp);
+											CLog.WriteLine (mtemp);
 										}
 									}
 								}
 							}
 							catch (FileNotFoundException e)
 							{
-								Console.WriteLine("File not found: {0}", temp);
+								CLog.WriteLine("File not found: {0}", temp);
 							}
 							catch (Exception e)
 							{
-								Console.WriteLine("Error loading file: {0}", temp);
+								CLog.WriteLine("Error loading file: {0}", temp);
 							}
 						}
 					}
@@ -206,13 +206,13 @@ namespace Demax
 			}
 			catch (FileNotFoundException e)
 			{
-				Console.WriteLine("File not found: {0}", filename);
+				CLog.WriteLine("File not found: {0}", filename);
 			}
 			catch (Exception e)
 			{
-				Console.WriteLine("Error loading file: {0}", filename);
+				CLog.WriteLine("Error loading file: {0}", filename);
 			}
-			Console.WriteLine ("Meshes: " + obj.meshes.Count + " VertCount[0]: " + obj.meshes[0].VertCount);
+			CLog.WriteLine ("Meshes: " + obj.meshes.Count + " VertCount[0]: " + obj.meshes[0].VertCount);
 			return obj;
 		}
 
@@ -221,7 +221,7 @@ namespace Demax
 			// Seperate lines from the file
 			List<String> lines = new List<string>(obj.Split('\n'));
 			string relp = Path.GetDirectoryName (p);
-			Console.WriteLine ("OBJ RelP: " + relp);
+			CLog.WriteLine ("OBJ RelP: " + relp);
 
 			// Lists to hold model data
 			List<Vector3> verts = new List<Vector3>();
@@ -257,7 +257,7 @@ namespace Demax
 
 						// If any of the parses failed, report the error
 						if (!success) {
-							Console.WriteLine ("Error parsing vertex: {0}", line);
+							CLog.WriteLine ("Error parsing vertex: {0}", line);
 						}
 					}
 
@@ -278,7 +278,7 @@ namespace Demax
 
 						// If any of the parses failed, report the error
 						if (!success) {
-							Console.WriteLine ("Error parsing texcoords: {0}", line);
+							CLog.WriteLine ("Error parsing texcoords: {0}", line);
 						}
 					}
 				} else if (line.StartsWith ("vn ")) {
@@ -300,7 +300,7 @@ namespace Demax
 
 						// If any of the parses failed, report the error
 						if (!success) {
-							Console.WriteLine ("Error parsing normals: {0}", line);
+							CLog.WriteLine ("Error parsing normals: {0}", line);
 						}
 					}
 				} else if (line.StartsWith ("f ")) { // Face definition
@@ -335,7 +335,7 @@ namespace Demax
 
 						// If any of the parses failed, report the error
 						if (!success) {
-							Console.WriteLine ("Error parsing face: {0}", line);
+							CLog.WriteLine ("Error parsing face: {0}", line);
 						} else {
 							// Decrement to get zero-based vertex numbers
 							face = new Tuple<Vector3, Vector3, Vector3>(new Vector3(i1-1,i2-1,i3-1),new Vector3(i4-1,i5-1,i6-1),new Vector3(i7-1,i8-1,i9-1));
@@ -376,8 +376,8 @@ namespace Demax
 			List<Vector3> temp_vertices = new List<Vector3> ();
 			List<Vector3> temp_normals = new List<Vector3> ();
 			List<Vector2> temp_uv = new List<Vector2> ();
-			Console.WriteLine ("VertIndex: "+faces[0].Item1.X+" and face count: "+faces.Count);
-			Console.WriteLine ("VertOffset: " + (faces [0].Item1.X - lastIndex.Item1));
+			CLog.WriteLine ("VertIndex: "+faces[0].Item1.X+" and face count: "+faces.Count);
+			CLog.WriteLine ("VertOffset: " + (faces [0].Item1.X - lastIndex.Item1));
 			int offset = (lastIndex.Item1 > 0) ? -1 : 0;
 
 			List<Tuple<int,int,int>> newfaces = new List<Tuple<int, int, int>> ();
@@ -401,23 +401,23 @@ namespace Demax
 				try{
 					temp_vertices.Add(verts[newfaces[i].Item1]);
 				} catch(Exception ex){
-					Console.WriteLine (ex.ToString ());
-					Console.WriteLine (verts.Count);
-					Console.WriteLine ("Indices Vertex error: " + (faces[i].Item1.X - lastIndex.Item1));
+					CLog.WriteLine (ex.ToString ());
+					CLog.WriteLine (verts.Count.ToString());
+					CLog.WriteLine ("Indices Vertex error: " + (faces[i].Item1.X - lastIndex.Item1));
 					Console.ReadKey ();
 				}
 				try{
 					temp_normals.Add(normals[newfaces[i].Item3]);
 				} catch(Exception ex){
-					Console.WriteLine (ex.ToString ());
-					Console.WriteLine ("Indices Normal error: " + (faces[i].Item3.X - lastIndex.Item3));
+					CLog.WriteLine (ex.ToString ());
+					CLog.WriteLine ("Indices Normal error: " + (faces[i].Item3.X - lastIndex.Item3));
 					Console.ReadKey ();
 				}
 				try{
 					temp_uv.Add(texs[newfaces[i].Item2]);
 				} catch(Exception ex){
-					Console.WriteLine (ex.ToString ());
-					Console.WriteLine ("Indices UV error: " + (faces[i].Item2.X - lastIndex.Item2));
+					CLog.WriteLine (ex.ToString ());
+					CLog.WriteLine ("Indices UV error: " + (faces[i].Item2.X - lastIndex.Item2));
 					Console.ReadKey ();
 				}
 			}
@@ -440,7 +440,7 @@ namespace Demax
             vol.normals = new_normals.ToArray();
             vol.colors = colors.ToArray();
             vol.texturecoords = new_uvs.ToArray();
-			Console.WriteLine ("Last Vertex: " + vol.vertices[vol.vertices.Count()-1].X);
+			CLog.WriteLine ("Last Vertex: " + vol.vertices[vol.vertices.Count()-1].X);
 			return vol;
 		}
 

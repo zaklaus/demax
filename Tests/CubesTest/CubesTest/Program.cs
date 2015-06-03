@@ -17,7 +17,7 @@ namespace CubesTest
 
             CEntity x = e.EntityManager.CreateEntity("cubes");
             x.Transform.Position = new OpenTK.Vector3(0, -6, -20);
-            x.AddScript("Scripts/cubes.py");
+            x.AddScript("Scripts/room.py");
 
             e.Start();
         }

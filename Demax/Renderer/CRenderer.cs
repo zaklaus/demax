@@ -106,87 +106,93 @@ namespace Demax
 			GL.GenBuffers(1, out ibo_elements);
 		}
 
-
+        /// <summary>
+        /// Updates our matrices for every existing volume.
+        /// </summary>
+        /// <param name="v"></param>
 		void updateTest(Volume v)
 		{
-				try{
-				
-				v.CalculateModelMatrix ();
-				v.ViewProjectionMatrix = projection;
-				v.ViewModelMatrix = viewmodel;
-				v.ModelViewProjectionMatrix = v.ModelMatrix * v.ViewModelMatrix * v.ViewProjectionMatrix;
-				int vertcount = 0;
+            // Halts if volume is invisible.
+            if (!v.isVisible)
+                return;
 
-				//foreach(CEntity en in core.EntityManager.GetEntities())
-				//{
-					//foreach (Volume v in en.GetModels())
-					//{
-				if (!v.isVisible)
-					return;
+			try
+            {
+                // Calculates our matrices.
+                //
+			    v.CalculateModelMatrix ();
+			    v.ViewProjectionMatrix = projection;
+			    v.ViewModelMatrix = viewmodel;
+			    v.ModelViewProjectionMatrix = v.ModelMatrix * v.ViewModelMatrix * v.ViewProjectionMatrix;
+			    
+                /* Populates our vertices, normals and uv coordinates */
+                #region prebuffer
+                int vertcount = 0;
+                List<Vector3> verts = new List<Vector3>();
+                List<int> inds = new List<int>();
+                List<Vector3> colors = new List<Vector3>();
+                List<Vector3> norms = new List<Vector3>();
+                List<Vector2> texcoords = new List<Vector2>();
 
-				List<Vector3> verts = new List<Vector3>();
-				List<int> inds = new List<int>();
-				List<Vector3> colors = new List<Vector3>();
-				List<Vector3> norms = new List<Vector3>();
-				List<Vector2> texcoords = new List<Vector2>();
-				//		if (v.meshes.Count > 0) {
-				//			foreach (Volume mesh in v.meshes) {
-								
-								verts.AddRange(v.GetVerts().ToList());
-								inds.AddRange(v.GetIndices().ToList());
-								colors.AddRange(v.GetColorData().ToList());
-								texcoords.AddRange(v.GetTextureCoords().ToList());
-								norms.AddRange (v.GetNormals ().ToList());
-								vertcount += v.VertCount;
-				//			}
-				//		}
-				//	}
-				//}
+                verts.AddRange(v.GetVerts().ToList());
+                inds.AddRange(v.GetIndices().ToList());
+                colors.AddRange(v.GetColorData().ToList());
+                texcoords.AddRange(v.GetTextureCoords().ToList());
+                norms.AddRange(v.GetNormals().ToList());
+                vertcount += v.VertCount;
 
-				vertdata = verts.ToArray();
-				indicedata = inds.ToArray();
-				normdata = norms.ToArray ();
-				coldata = colors.ToArray();
-				texcoorddata = texcoords.ToArray();
+                vertdata = verts.ToArray();
+                indicedata = inds.ToArray();
+                normdata = norms.ToArray();
+                coldata = colors.ToArray();
+                texcoorddata = texcoords.ToArray(); 
+                #endregion
 
-				activeShader = CShaderProgram.LoadShaderPointer(v.Shader);
+                /* --- */
 
-				GL.BindBuffer(BufferTarget.ArrayBuffer, shaders[activeShader].GetBuffer("vPosition"));
 
-				GL.BufferData<Vector3>(BufferTarget.ArrayBuffer, (IntPtr)(vertdata.Length * Vector3.SizeInBytes), vertdata, BufferUsageHint.StaticDraw);
-				GL.VertexAttribPointer(shaders[activeShader].GetAttribute("vPosition"), 3, VertexAttribPointerType.Float, false, 0, 0);
+                /* Sends our data to buffers */
+                #region buffers
+                activeShader = CShaderProgram.LoadShaderPointer(v.Shader);
 
-				if (shaders [activeShader].GetAttribute ("vNormal") != -1) {
-					GL.BindBuffer (BufferTarget.ArrayBuffer, shaders [activeShader].GetBuffer ("vNormal"));
+			    GL.BindBuffer(BufferTarget.ArrayBuffer, shaders[activeShader].GetBuffer("vPosition"));
 
-					GL.BufferData<Vector3> (BufferTarget.ArrayBuffer, (IntPtr)(normdata.Length * Vector3.SizeInBytes), normdata, BufferUsageHint.StaticDraw);
-					GL.VertexAttribPointer (shaders [activeShader].GetAttribute ("vNormal"), 3, VertexAttribPointerType.Float, false, 0, 0);
-				}
-				// Indice Buffer
-				GL.BindBuffer (BufferTarget.ElementArrayBuffer, ibo_elements);
-				GL.BufferData<int> (BufferTarget.ElementArrayBuffer,
-					(IntPtr)(indicedata.Length * sizeof(int)),
-					indicedata,
-					BufferUsageHint.StaticDraw);
+			    GL.BufferData<Vector3>(BufferTarget.ArrayBuffer, (IntPtr)(vertdata.Length * Vector3.SizeInBytes), vertdata, BufferUsageHint.StaticDraw);
+			    GL.VertexAttribPointer(shaders[activeShader].GetAttribute("vPosition"), 3, VertexAttribPointerType.Float, false, 0, 0);
 
-				if (shaders[activeShader].GetAttribute("vColor") != -1)
-				{
-					GL.BindBuffer(BufferTarget.ArrayBuffer, shaders[activeShader].GetBuffer("vColor"));
-					GL.BufferData<Vector3>(BufferTarget.ArrayBuffer, (IntPtr)(coldata.Length * Vector3.SizeInBytes), coldata, BufferUsageHint.StaticDraw);
-					GL.VertexAttribPointer(shaders[activeShader].GetAttribute("vColor"), 3, VertexAttribPointerType.Float, true, 0, 0);
-				}
+			    if (shaders [activeShader].GetAttribute ("vNormal") != -1) {
+				    GL.BindBuffer (BufferTarget.ArrayBuffer, shaders [activeShader].GetBuffer ("vNormal"));
 
-				if (shaders[activeShader].GetAttribute("texcoord") != -1)
-				{
-					GL.BindBuffer(BufferTarget.ArrayBuffer, shaders[activeShader].GetBuffer("texcoord"));
-					GL.BufferData<Vector2>(BufferTarget.ArrayBuffer, (IntPtr)(texcoorddata.Length * Vector2.SizeInBytes), texcoorddata, BufferUsageHint.StaticDraw);
-					GL.VertexAttribPointer(shaders[activeShader].GetAttribute("texcoord"), 2, VertexAttribPointerType.Float, true, 0, 0);
-				}
-			}
-			catch(Exception ex){
-				Console.WriteLine (ex.ToString ());
-			}
-		}
+				    GL.BufferData<Vector3> (BufferTarget.ArrayBuffer, (IntPtr)(normdata.Length * Vector3.SizeInBytes), normdata, BufferUsageHint.StaticDraw);
+				    GL.VertexAttribPointer (shaders [activeShader].GetAttribute ("vNormal"), 3, VertexAttribPointerType.Float, false, 0, 0);
+			    }
+			    // Indice Buffer
+			    GL.BindBuffer (BufferTarget.ElementArrayBuffer, ibo_elements);
+			    GL.BufferData<int> (BufferTarget.ElementArrayBuffer,
+				    (IntPtr)(indicedata.Length * sizeof(int)),
+				    indicedata,
+				    BufferUsageHint.StaticDraw);
+
+			    if (shaders[activeShader].GetAttribute("vColor") != -1)
+			    {
+				    GL.BindBuffer(BufferTarget.ArrayBuffer, shaders[activeShader].GetBuffer("vColor"));
+				    GL.BufferData<Vector3>(BufferTarget.ArrayBuffer, (IntPtr)(coldata.Length * Vector3.SizeInBytes), coldata, BufferUsageHint.StaticDraw);
+				    GL.VertexAttribPointer(shaders[activeShader].GetAttribute("vColor"), 3, VertexAttribPointerType.Float, true, 0, 0);
+			    }
+
+			    if (shaders[activeShader].GetAttribute("texcoord") != -1)
+			    {
+				    GL.BindBuffer(BufferTarget.ArrayBuffer, shaders[activeShader].GetBuffer("texcoord"));
+				    GL.BufferData<Vector2>(BufferTarget.ArrayBuffer, (IntPtr)(texcoorddata.Length * Vector2.SizeInBytes), texcoorddata, BufferUsageHint.StaticDraw);
+				    GL.VertexAttribPointer(shaders[activeShader].GetAttribute("texcoord"), 2, VertexAttribPointerType.Float, true, 0, 0);
+                }
+                #endregion buffers
+                /* --- */
+		    }
+		    catch(Exception ex){
+			    CLog.WriteLine (ex.ToString ());
+		    }
+	    }
 
 		/// <summary>
 		/// Flush this instance.
@@ -204,6 +210,9 @@ namespace Demax
 			core = CCore.GetCore ();
 		}
 
+        /// <summary>
+        /// Registers our events.
+        /// </summary>
         public void Init()
         {
             gameRenderer = core.GameRenderer;
@@ -228,6 +237,11 @@ namespace Demax
             }
         }
 
+        /// <summary>
+        /// Changes focus for our controls.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         public void gameRenderer_FocusedChanged(object sender, EventArgs e)
         {
             core.InputManager.Focused = !core.InputManager.Focused;
@@ -237,6 +251,12 @@ namespace Demax
 		{
 			public static readonly Version FramebufferObject = new Version(3, 0);
 		}
+
+        /// <summary>
+        /// Handles initialization of our renderer.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
 		public void OnLoad(object sender, EventArgs e)
 		{
 			gameRenderer.VSync = VSyncMode.On;
@@ -252,25 +272,27 @@ namespace Demax
 				extensions.Add(extension, true);
 			}
 
+            // Is this compatible GPU?
+            //
 			if (extensions.ContainsKey("ARB_fragment_program"))
 			{
-				Console.WriteLine("Sorry, Your GPU is not supported!");
+				CLog.WriteLine("Sorry, Your GPU is not supported!");
 				core.GameRenderer.Close ();
 				Console.ReadKey();
 				return;
 			}
 
-
+            // Further initialization
+            //
 			initTest ();
-			/* TEST CODE */
-
-			/* TEST CODE */
-
-			//updateTest ();
-
 			loaded = true;
 		}
 
+        /// <summary>
+        /// Updates our viewport.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         public void OnResize(object sender, EventArgs e)
 		{
 			GL.Viewport (gameRenderer.ClientRectangle.X, gameRenderer.ClientRectangle.Y, gameRenderer.ClientRectangle.Width, gameRenderer.ClientRectangle.Height);
@@ -286,52 +308,70 @@ namespace Demax
 			this.onDemand = state;
 		}
 
+        /// <summary>
+        /// Handles physics and logical operations.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         public void OnUpdateFrame(object sender, FrameEventArgs e)
 		{
-
-			//df.DoFall ();
-
+            // Let's step in our world, step to the future!
+            //
 			core.world.Step (1.0f / 100.0f, true);
 
-			foreach (CEntity en in core.EntityManager.GetEntities()) {
-				foreach (Volume v in en.GetModels()) {
+            #region PreLogic
+
+            foreach (CEntity en in core.EntityManager.GetEntities())
+            {
+                foreach (Volume v in en.GetModels())
+                {
                     List<RigidBody> b = new List<RigidBody>(v.body);
-                    foreach(var r in b)
-					if (v.body != null && !r.IsStatic) {
-						v.Position = new Vector3 (r.Position.X, r.Position.Y, r.Position.Z);
-						v.Rotation = v.JMatrixToMatrix (r.Orientation);
+                    foreach (var r in b)
+                        if (v.body != null && !r.IsStatic)
+                        {
+                            v.Position = new Vector3(r.Position.X, r.Position.Y, r.Position.Z);
+                            v.Rotation = v.JMatrixToMatrix(r.Orientation);
 
-						if (v.Position.Y < zeroKill) {
-							if (v.killOnZero) {
-								v.Destroy ();
-							} else {
-								/*v.RemoveRigidbody ();
-								v.Position = Vector3.Zero;
-								v.Rotation = Matrix4.Identity;
-								v.isVisible = false;*/
-							}
-						}
-					}
-				}
-			}
-			bool shouldFlush = false;
-			foreach (CEntity en in core.EntityManager.GetEntities()) {
-				List<Volume> l = en.GetModels ();
-				foreach (Volume v in l.ToList()) {
-					if (v.markedForDestroy) {
-						en.Models.Remove (v);
-						shouldFlush = true;
-					}
-				}
-			}
+                            if (v.Position.Y < zeroKill)
+                            {
+                                if (v.killOnZero)
+                                {
+                                    v.Destroy();
+                                }
+                                else
+                                {
+                                    /*v.RemoveRigidbody ();
+                                    v.Position = Vector3.Zero;
+                                    v.Rotation = Matrix4.Identity;
+                                    v.isVisible = false;*/
+                                }
+                            }
+                        }
+                }
+            }
+            bool shouldFlush = false;
+            foreach (CEntity en in core.EntityManager.GetEntities())
+            {
+                List<Volume> l = en.GetModels();
+                foreach (Volume v in l.ToList())
+                {
+                    if (v.markedForDestroy)
+                    {
+                        en.Models.Remove(v);
+                        shouldFlush = true;
+                    }
+                }
+            }
+            
+            #endregion
 
-			//if(onDemand || shouldFlush)
-				//updateTest ();
-
+            // Updates our matrices.
+            //
 			viewmodel = mainCamera.GetViewMatrix();
 			projection = Matrix4.CreatePerspectiveFieldOfView ((float)Math.PI / 4, gameRenderer.Width / (float)gameRenderer.Height, CCore.GetCore().MainCamera.nearPlane, CCore.GetCore().MainCamera.farPlane);
 
-
+            // Updates volume matrices. Yeah, again...
+            //
 			foreach (CEntity en in core.EntityManager.GetEntities()) {
 				foreach (Volume v in en.GetModels()) {
 					v.CalculateModelMatrix ();
@@ -340,8 +380,7 @@ namespace Demax
 					v.ModelViewProjectionMatrix = v.ModelMatrix * v.ViewModelMatrix * v.ViewProjectionMatrix;
 				}
 			}
-			// Modelview Buffer
-
+			
 			GL.ClearColor (Color.CornflowerBlue);
 			GL.PointSize (5f);
 
@@ -351,8 +390,15 @@ namespace Demax
 			CScript.BroadcastEvent ("OnUpdate");
 		}
 
+        /// <summary>
+        /// Handles our glory rendering stuff.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         public void OnRenderFrame(object sender, FrameEventArgs e)
 		{
+            // Is our game already loaded and updated?
+            //
 			if (updated && loaded) {
 				updated = false;
 			} else {
@@ -363,57 +409,66 @@ namespace Demax
 
 			int indiceat = 0;
 
-			foreach (CEntity entity in core.EntityManager.GetEntities())
-			{
-				foreach (Volume v in entity.GetModels())
-				{
-					int i=0;
-					foreach (Volume m in v.meshes) {
-						GL.UseProgram (shaders [CShaderProgram.LoadShaderPointer(m.Shader)].ProgramID);
-						shaders[CShaderProgram.LoadShaderPointer(m.Shader)].EnableVertexAttribArrays();
+            #region RenderLoop
 
-						updateTest (m);
-						if (!m.isVisible) {
-							indiceat += m.IndiceCount;
-							continue;
-						}
-						int tex = 0;
+            foreach (CEntity entity in core.EntityManager.GetEntities())
+            {
+                foreach (Volume v in entity.GetModels())
+                {
+                    int i = 0;
+                    foreach (Volume m in v.meshes)
+                    {
+                        GL.UseProgram(shaders[CShaderProgram.LoadShaderPointer(m.Shader)].ProgramID);
+                        shaders[CShaderProgram.LoadShaderPointer(m.Shader)].EnableVertexAttribArrays();
 
-						if (v.materials.Count == 0)
-							tex = v.TextureID;
-						else
-						//TODO: proper multi-texture handling
-							foreach (var mat in v.materials)
-								if (mat.name == m.matuse [0]) {
-									tex = mat.TextureID;
-								}
-						
+                        updateTest(m);
+                        if (!m.isVisible)
+                        {
+                            indiceat += m.IndiceCount;
+                            continue;
+                        }
+                        int tex = 0;
 
-						GL.BindTexture (TextureTarget.Texture2D, tex);
-						GL.UniformMatrix4 (shaders [activeShader].GetUniform ("M"), false, ref v.ModelMatrix);
-						GL.UniformMatrix4 (shaders [activeShader].GetUniform ("V"), false, ref v.ViewModelMatrix);
-						GL.UniformMatrix4 (shaders [activeShader].GetUniform ("P"), false, ref v.ViewProjectionMatrix);
-						GL.UniformMatrix4 (shaders [activeShader].GetUniform ("MVP"), false, ref v.ModelViewProjectionMatrix);
+                        if (v.materials.Count == 0)
+                            tex = v.TextureID;
+                        else
+                            foreach (var mat in v.materials)
+                                if (mat.name == m.matuse[0])
+                                {
+                                    tex = mat.TextureID;
+                                }
 
-						if (shaders [activeShader].GetAttribute ("maintexture") != -1) {
-							GL.Uniform1 (shaders [activeShader].GetAttribute ("maintexture"), tex);
-						}
-						try{
-							//if(v.materials.Count == 0)
-								GL.DrawElements (PrimitiveType.Triangles, m.IndiceCount, DrawElementsType.UnsignedInt, 0);
-							//else
-								//GL.DrawArrays(PrimitiveType.Triangles, 0, m.IndiceCount);
-						} catch(Exception ex){
-							Console.WriteLine (ex.ToString ());
-						}
-						indiceat += m.IndiceCount;
-						i++;
+                        // Sends our uniform matrices and binds our texture.
+                        //
+                        GL.BindTexture(TextureTarget.Texture2D, tex);
+                        GL.UniformMatrix4(shaders[activeShader].GetUniform("M"), false, ref v.ModelMatrix);
+                        GL.UniformMatrix4(shaders[activeShader].GetUniform("V"), false, ref v.ViewModelMatrix);
+                        GL.UniformMatrix4(shaders[activeShader].GetUniform("P"), false, ref v.ViewProjectionMatrix);
+                        GL.UniformMatrix4(shaders[activeShader].GetUniform("MVP"), false, ref v.ModelViewProjectionMatrix);
 
-						shaders[CShaderProgram.LoadShaderPointer(m.Shader)].DisableVertexAttribArrays();
-					}
-				}
-			}
+                        // Does the shader support textures? Send texture if yes.
+                        //
+                        if (shaders[activeShader].GetAttribute("maintexture") != -1)
+                        {
+                            GL.Uniform1(shaders[activeShader].GetAttribute("maintexture"), tex);
+                        }
+                        try
+                        {
+                            GL.DrawElements(PrimitiveType.Triangles, m.IndiceCount, DrawElementsType.UnsignedInt, 0);
+                        }
+                        catch (Exception ex)
+                        {
+                            CLog.WriteLine(ex.ToString());
+                        }
+                        indiceat += m.IndiceCount;
+                        i++;
 
+                        shaders[CShaderProgram.LoadShaderPointer(m.Shader)].DisableVertexAttribArrays();
+                    }
+                }
+            }
+            
+            #endregion
             guiManager.Draw();
 
 			gameRenderer.SwapBuffers();
@@ -422,34 +477,7 @@ namespace Demax
 
 			deltaTime = (float)e.Time;
 
-			foreach (CEntity en in core.EntityManager.GetEntities()) {
-				foreach (CScript cs in en.GetScripts()) {
-					cs.CallEvent ("OnRender");
-				}
-			}
-		}
-
-
-
-		private JVector M2V(JMatrix wantedOrientation)
-		{
-			// this is something like correction = wantedPosition - position
-			JMatrix q = JMatrix.Inverse(wantedOrientation);// * testBody.Orientation;
-			JVector axis;
-
-			float x = q.M32 - q.M23;
-			float y = q.M13 - q.M31;
-			float z = q.M21 - q.M12;
-
-			float r = JMath.Sqrt(x * x + y * y + z * z);
-			float t = q.M11 + q.M22 + q.M33;
-
-			float angle = (float)Math.Atan2(r, t - 1);
-			axis = new JVector(x, y, z) * angle;
-
-			if (r != 0.0f) axis = axis * (1.0f / r);
-
-			return axis;
+            CScript.BroadcastEvent("OnRender");
 		}
     }
 }
