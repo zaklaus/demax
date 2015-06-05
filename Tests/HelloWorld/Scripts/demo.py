@@ -21,7 +21,9 @@ def OnUpdate():
 	#cam.AddRotation(Math.Sin(rotY), Math.Cos(rotY), 0.1)
 	#cam.FieldOfView = MathHelper.Clamp(fov + Math.Sin(rotY) * 10,30,120)
 
-	if input.GetState(Key_A):
-		x+=1
-	if input.GetState(Key_D):
-		x-=1
+def OnKeyDown(key):
+	global x
+	if key == 'A':
+		x -= 0.1
+	if key == 'D':
+		x += 0.1

@@ -78,6 +78,9 @@ namespace Demax
 			}
 		}
 
+        string filename;
+        CEntity e;
+
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Demax.CScript"/> class.
 		/// </summary>
@@ -85,53 +88,64 @@ namespace Demax
 		/// <param name="e">E.</param>
 		public CScript (string filename, CEntity e)
 		{
-			var time = DateTime.Now;
+            this.filename = filename;
+            this.e = e;
+		}
+
+        public void Init()
+        {
+            var time = DateTime.Now;
 
             // Checks if file exists. Halts on missing file.
             //
-			if (!File.Exists (filename)) {
-				return;
-			}
-			entity = e;
+            if (!File.Exists(filename))
+            {
+                return;
+            }
+            entity = e;
 
 
             // Creates our scope for script.
             //
-			m_scope = m_engine.CreateScope();
-			m_scope.ImportModule ("clr");
-			m_scope.SetVariable ("me", entity);
-			var game = CCore.GetCore ();
-			
+            m_scope = m_engine.CreateScope();
+            m_scope.ImportModule("clr");
+            
+            var game = CCore.GetCore();
+
             // Sets some essential variables for our script.
             //
-			m_scope.SetVariable ("cam", e.game.MainCamera);
-			m_scope.SetVariable ("game", e.game);
+            m_scope.SetVariable("cam", e.game.MainCamera);
+            m_scope.SetVariable("game", e.game);
             m_scope.SetVariable("gui", e.game.Renderer.guiManager);
-			m_scope.SetVariable ("cell", e.game.Renderer);
-            m_scope.SetVariable("em", e.game.EntityManager);
+            m_scope.SetVariable("cell", e.game.Renderer);
+            m_scope.SetVariable("em", e.game.EntityManager); 
+            m_scope.SetVariable("me", entity);
+            m_scope.SetVariable("scr", this);
 
-			m_scope.SetVariable ("input", e.game.InputManager);
+
+            m_scope.SetVariable("input", e.game.InputManager);
 
             // Build or use cached key symbols.
-            //
-			LoadKeys (this);
+            // REMOVED: Use LoadKeys(this) to load legacy keys.
+            //LoadKeys (this);
 
             // Imports several libraries for our script.
             //
-			m_engine.Execute ("import clr", m_scope);
-			m_engine.Execute ("clr.AddReference(\"Demax\")", m_scope);
-			m_engine.Execute ("clr.AddReference(\"OpenTK\")", m_scope);
-			m_engine.Execute ("clr.AddReference(\"System\")", m_scope);
-			m_engine.Execute ("clr.AddReference(\"System.IO\")", m_scope);
-			m_engine.Execute ("from Demax import *", m_scope);
-			m_engine.Execute ("from System import *", m_scope);
-			m_engine.Execute ("from System.IO import *", m_scope);
-			m_engine.Execute ("from OpenTK import *", m_scope);
-			src = m_engine.CreateScriptSourceFromFile (filename);
-			
+            m_engine.Execute("import clr", m_scope);
+            m_engine.Execute("clr.AddReference(\"Demax\")", m_scope);
+            m_engine.Execute("clr.AddReference(\"OpenTK\")", m_scope);
+            m_engine.Execute("clr.AddReference(\"System\")", m_scope);
+            m_engine.Execute("clr.AddReference(\"System.IO\")", m_scope);
+            m_engine.Execute("from Demax import *", m_scope);
+            m_engine.Execute("from System import *", m_scope);
+            m_engine.Execute("from System.IO import *", m_scope);
+            m_engine.Execute("from OpenTK import *", m_scope);
+            src = m_engine.CreateScriptSourceFromFile(filename);
+
             // Executes our script and calls our OnStart event.
-            try{	
-			    src.Execute(m_scope);
+            try
+            {
+                src.Execute(m_scope);
                 var OnStart = m_scope.GetVariable("OnStart");
                 try
                 {
@@ -142,25 +156,26 @@ namespace Demax
                     CLog.WriteLine("Logic Error: " + ex.ToString());
                     invalid = true;
                 }
-			}
-			catch(Exception ex){
-				CLog.WriteLine ("Logic Error: " + ex.ToString ());
-				return;
-			}
+            }
+            catch (Exception ex)
+            {
+                CLog.WriteLine("Logic Error: " + ex.ToString());
+                return;
+            }
 			
 
 			
-		}
+        }
 
 		/// <summary>
 		/// Broadcasts the event.
 		/// </summary>
 		/// <param name="name">Name.</param>
-		public static void BroadcastEvent(string name)
+		public static void BroadcastEvent(string name, object arg=null)
 		{
 			foreach (CEntity en in CCore.GetCore().EntityManager.GetEntities()) {
 				foreach (CScript cs in en.GetScripts()) {
-					cs.CallEvent (name);
+					cs.CallEvent (name,arg);
 				}
 			}
 		}
@@ -171,12 +186,16 @@ namespace Demax
 		/// Calls the event.
 		/// </summary>
 		/// <param name="name">Name.</param>
-		public void CallEvent(string name, string args="")
+		public void CallEvent(string name, object arg=null)
 		{
 			if(!invalid)
 				try{
-				var callable = m_scope.GetVariable (name);
-				callable ();
+				    var callable = m_scope.GetVariable (name);
+
+                    if (arg == null)
+                        callable();
+                    else
+                        callable(arg);
 				}
 				catch(Exception ex){
 					if (ex.ToString ().Contains ("ScopeStorage"))

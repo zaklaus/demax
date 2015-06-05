@@ -137,6 +137,8 @@ namespace Demax
 			catch{
 				keys.Add (e.Key, true);
 			}
+
+            CScript.BroadcastEvent("OnKeyDown", e.Key.ToString());
 		}
 
 		/// <summary>
@@ -153,6 +155,8 @@ namespace Demax
 			catch{
 				keys.Add (e.Key, false);
 			}
+
+            CScript.BroadcastEvent("OnKeyUp", e.Key.ToString());
 		}
 
 		/// <summary>
@@ -162,7 +166,7 @@ namespace Demax
 		/// <param name="e">E.</param>
 		public void OnKeyPress(object sender, KeyPressEventArgs e)
 		{
-
+            CScript.BroadcastEvent("OnKeyPress", e.KeyChar.ToString());
 		}
 	}
 }

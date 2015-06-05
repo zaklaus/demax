@@ -116,6 +116,7 @@ namespace Demax
 		{
 			CScript s = new CScript (filename, this);
 			scripts.Add (s);
+            s.Init();
 
 			return s;
 		}
