@@ -52,7 +52,7 @@ namespace Demax
 		/// The position.
 		/// </summary>
 		public Vector3 Position = Vector3.Zero;
-
+        public Vector3 LookAt = Vector3.Zero;
 		public Camera()
 		{
 		}
@@ -92,13 +92,16 @@ namespace Demax
 		/// <returns>The view matrix.</returns>
 		public Matrix4 GetViewMatrix()
 		{
+            if(LookAt!=Vector3.Zero)
+                return Matrix4.LookAt(Position, Position + LookAt, Vector3.UnitY);
+
 			Vector3 lookat = new Vector3();
 
 			lookat.X = (float)(Math.Sin((float)Orientation.X) * Math.Cos((float)Orientation.Y));
 			lookat.Y = (float)Math.Sin((float)Orientation.Y);
-			lookat.Z = (float)(Math.Cos((float)Orientation.X) * Math.Cos((float)Orientation.Y));
+            lookat.Z = ((float)(Math.Cos((float)Orientation.X) * Math.Cos((float)Orientation.Y)));
 
-			return Matrix4.LookAt(Position, Position + lookat, Vector3.UnitY);
+            return Matrix4.LookAt(Position, Position + lookat, Vector3.UnitY);
 		}
 
 		/// <summary>
@@ -141,14 +144,27 @@ namespace Demax
 		/// </summary>
 		/// <param name="x">The x coordinate.</param>
 		/// <param name="y">The y coordinate.</param>
-		public void AddRotation(float x, float y)
+		public void AddRotation(float x, float y, float z = 0.0f)
 		{
 			x = x * MouseSensitivity;
 			y = y * MouseSensitivity;
 
 			Orientation.X = (Orientation.X + x) % ((float)Math.PI * 2.0f);
 			Orientation.Y = Math.Max(Math.Min(Orientation.Y + y, (float)Math.PI / 2.0f - 0.1f), (float)-Math.PI / 2.0f + 0.1f);
+            Orientation.Z = (Orientation.Z + z) % ((float)Math.PI * 2.0f);
 		}
+
+        public void SetRotation(float x, float y, float z)
+        {
+            Orientation.X = x;
+            Orientation.Y = y;
+            Orientation.Z = z;
+        }
+
+        public void LookAtf(Vector3 v)
+        {
+            LookAt = v;
+        }
 	}
 }
 

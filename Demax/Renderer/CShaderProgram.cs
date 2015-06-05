@@ -39,6 +39,48 @@ using OpenTK.Input;
 
 namespace Demax
 {
+
+    public static class DefaultShader
+    {
+        public static string passthrough = 
+            "#version 330\n"+
+            "in vec3 vPosition;\n"+
+            "out vec2 UV;\n"+
+
+            "void main(){\n"+
+	        "    gl_Position = vec4(vPosition,1);\n"+
+	        "    UV = (vPosition.xy+vec2(1,1))/2.0;\n"+
+            "}\n"+
+            "";
+
+        public static string vs_fallback =
+            "#version 330\n" +
+            "in vec3 vPosition;\n" +
+            "in vec2 texcoord;\n" +
+            "out vec2 f_texcoord;\n" +
+            "uniform mat4 M;\n" +
+            "uniform mat4 V;\n" +
+            "uniform mat4 P;\n" +
+            "uniform mat4 MVP;\n"+
+            "void main(){\n" +
+                "gl_Position = MVP * vec4(vPosition,1);\n" +
+                "f_texcoord = texcoord;"+
+            "}\n" +
+            "";
+
+        public static string fs_fallback =
+            "#version 330\n" +
+            "in vec2 f_texcoord;\n" +
+            "out vec4 outputColor;\n" +
+            "uniform sampler2D maintexture;\n" +
+            "void main()\n" +
+            "{\n" +
+                "vec2 flipped_texcoord = vec2(f_texcoord.x, 1.0 - f_texcoord.y);\n" +
+                "outputColor = texture(maintexture, flipped_texcoord);\n" +
+            "}\n" +
+            "";
+    }
+
 	public class AttributeInfo
 	{
 		public String name = "";
@@ -76,25 +118,32 @@ namespace Demax
 		public static string LoadShaderPointer(string name)
 		{
 			if(!CCore.GetCore().Renderer.shaders.ContainsKey(name))
-				CCore.GetCore().Renderer.shaders.Add(name, new CShaderProgram("vs_"+name+".glsl", "fs_"+name+".glsl", true));
+				CCore.GetCore().Renderer.shaders.Add(name, new CShaderProgram("vs_"+name+".glsl", "fs_"+name+".glsl", true, true));
 			return name;
 		}
 
-		public CShaderProgram(String vshader, String fshader, bool fromFile = false)
+		public CShaderProgram(String vshader, String fshader, bool vFromFile = false, bool fFromFile = false)
 		{
 			CLog.WriteLine ("Initializing shaders...");
 			ProgramID = GL.CreateProgram();
 
-			if (fromFile)
-			{
-				LoadShaderFromFile(vshader, ShaderType.VertexShader);
+			if (fFromFile)
+			{	
 				LoadShaderFromFile(fshader, ShaderType.FragmentShader);
 			}
 			else
 			{
-				LoadShaderFromString(vshader, ShaderType.VertexShader);
 				LoadShaderFromString(fshader, ShaderType.FragmentShader);
 			}
+
+            if(vFromFile)
+            {
+                LoadShaderFromFile(vshader, ShaderType.VertexShader);
+            }
+            else
+            {
+                LoadShaderFromString(vshader, ShaderType.VertexShader);
+            }
 
 			Link();
 			GenBuffers();
@@ -108,7 +157,9 @@ namespace Demax
 			GL.ShaderSource (address, code);
 			GL.CompileShader (address);
 			GL.AttachShader (ProgramID, address);
-			CLog.WriteLine (GL.GetShaderInfoLog (address));
+            string t = GL.GetShaderInfoLog(address);
+            if(t != "")
+			CLog.WriteLine (t);
 		}
 
 		/// <summary>
@@ -135,17 +186,32 @@ namespace Demax
 		/// <param name="type">Type.</param>
 		public void LoadShaderFromFile(String filename, ShaderType type)
 		{
-			using (StreamReader sr = new StreamReader(Path.Combine(path,filename)))
-			{
-				if (type == ShaderType.VertexShader)
-				{
-					loadShader(sr.ReadToEnd(), type, out VShaderID);
-				}
-				else if (type == ShaderType.FragmentShader)
-				{
-					loadShader(sr.ReadToEnd(), type, out FShaderID);
-				}
-			}
+            try
+            {
+                using (StreamReader sr = new StreamReader(Path.Combine(path, filename)))
+                {
+                    if (type == ShaderType.VertexShader)
+                    {
+                        loadShader(sr.ReadToEnd(), type, out VShaderID);
+                    }
+                    else if (type == ShaderType.FragmentShader)
+                    {
+                        loadShader(sr.ReadToEnd(), type, out FShaderID);
+                    }
+                }
+            }
+            catch
+            {
+                CLog.WriteLine(string.Format("Shader '{0}' not found! Using fallback shader...", filename));
+                if(type == ShaderType.VertexShader)
+                {
+                    loadShader(DefaultShader.vs_fallback, type, out VShaderID);
+                }
+                else if(type == ShaderType.FragmentShader)
+                {
+                    loadShader(DefaultShader.fs_fallback, type, out FShaderID);
+                }
+            }
 		}
 
 		/// <summary>

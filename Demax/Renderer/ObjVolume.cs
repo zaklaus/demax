@@ -51,7 +51,7 @@ using System.Drawing.Imaging;
 
 namespace Demax
 {
-	public class ObjVolume : Volume
+	public class ObjVolume : Volume, ICloneable
 	{
 
 
@@ -79,7 +79,10 @@ namespace Demax
 		/// <returns>Array of indices with offset applied</returns>
 		public override int[] GetIndices(int offset = 0)
 		{
-			return indices.ToArray();
+            List<int> a = new List<int>();
+            foreach (var i in indices)
+                a.Add(i + offset);
+			return a.ToArray();
 		}
 
 		/// <summary>
@@ -137,8 +140,55 @@ namespace Demax
 			
 		}
 
+        public object Clone()
+        {
+            return this.MemberwiseClone();
+        }
+
+        public static ObjVolume LoadFromFileAnim(CEntity en, string name, string dirname, int skip=0)
+        {
+            ObjVolume o = new ObjVolume(en);
+            List<ObjVolume> a = new List<ObjVolume>();
+
+            DirectoryInfo dir = new DirectoryInfo(dirname);
+            
+            for(int i = 0; i < dir.GetFiles().Length; i++)
+            {
+                if (skip != 0)
+                {
+                    if ((i % skip) == 0)
+                    {
+                        i += skip;
+                        continue;
+                    }
+                }
+
+                if (dir.GetFiles()[i].Extension == ".obj")
+                    a.Add(LoadFromFile(en, dir.GetFiles()[i].FullName));
+            }
+            o.LoadAnim(name, a.ToList<Volume>());
+            return o;
+        }
+
+        public static ObjVolume[] LoadFromFolder(CEntity en, string dirname)
+        {
+            List<ObjVolume> a = new List<ObjVolume>();
+
+            DirectoryInfo dir = new DirectoryInfo(dirname);
+            foreach(var file in dir.GetFiles())
+            {
+                if(file.Extension == ".obj")
+                    a.Add(LoadFromFile(en, file.FullName));
+            }
+
+            return a.ToArray();
+        }
+
 		public static ObjVolume LoadFromFile(CEntity en, string filename)
 		{
+            if (CCore.GetCore().Renderer.volumes.ContainsKey(filename))
+                return (ObjVolume) CCore.GetCore().Renderer.volumes[filename].Clone();
+
 			ObjVolume obj = new ObjVolume(en);
 			try
 			{
@@ -212,7 +262,11 @@ namespace Demax
 			{
 				CLog.WriteLine("Error loading file: {0}", filename);
 			}
-			CLog.WriteLine ("Meshes: " + obj.meshes.Count + " VertCount[0]: " + obj.meshes[0].VertCount);
+			//CLog.WriteLine ("Meshes: " + obj.meshes.Count + " VertCount[0]: " + obj.meshes[0].VertCount);
+
+            if(!CCore.GetCore().Renderer.volumes.ContainsKey(filename))
+                CCore.GetCore().Renderer.volumes.Add(filename, obj);
+
 			return obj;
 		}
 
@@ -221,7 +275,7 @@ namespace Demax
 			// Seperate lines from the file
 			List<String> lines = new List<string>(obj.Split('\n'));
 			string relp = Path.GetDirectoryName (p);
-			CLog.WriteLine ("OBJ RelP: " + relp);
+			//CLog.WriteLine ("OBJ RelP: " + relp);
 
 			// Lists to hold model data
 			List<Vector3> verts = new List<Vector3>();
@@ -376,8 +430,8 @@ namespace Demax
 			List<Vector3> temp_vertices = new List<Vector3> ();
 			List<Vector3> temp_normals = new List<Vector3> ();
 			List<Vector2> temp_uv = new List<Vector2> ();
-			CLog.WriteLine ("VertIndex: "+faces[0].Item1.X+" and face count: "+faces.Count);
-			CLog.WriteLine ("VertOffset: " + (faces [0].Item1.X - lastIndex.Item1));
+			//CLog.WriteLine ("VertIndex: "+faces[0].Item1.X+" and face count: "+faces.Count);
+			//CLog.WriteLine ("VertOffset: " + (faces [0].Item1.X - lastIndex.Item1));
 			int offset = (lastIndex.Item1 > 0) ? -1 : 0;
 
 			List<Tuple<int,int,int>> newfaces = new List<Tuple<int, int, int>> ();
@@ -440,7 +494,7 @@ namespace Demax
             vol.normals = new_normals.ToArray();
             vol.colors = colors.ToArray();
             vol.texturecoords = new_uvs.ToArray();
-			CLog.WriteLine ("Last Vertex: " + vol.vertices[vol.vertices.Count()-1].X);
+			//CLog.WriteLine ("Last Vertex: " + vol.vertices[vol.vertices.Count()-1].X);
 			return vol;
 		}
 

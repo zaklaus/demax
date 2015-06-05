@@ -1,11 +1,13 @@
 ﻿import System.Math as Math
 
-tick = 0
+tick = 0.00
 cell.SetZeroKill(-100)
 
 cubes = []
 
 htest = ''
+
+rotY = 1
 
 rand = Random()
 
@@ -18,12 +20,22 @@ def OnStart():
 	print('Press N for random cube spawn')
 	print('Press M for weird cube spawn')
 	print('Press P to exit game')
-	floor = ObjVolume.LoadFromFile(me, 'Models/room.obj')
-	floor.Position = Vector3(0, 0, 0)
-	floor.AddRigidbody()
-	floor.SetStatic(True)
-	floor.meshes[0].Shader = 'lightmap'
-	me.AddModel(floor)
+
+	#z = ObjVolume.LoadFromFileAnim(me, 'test', 'Models/anim', 2)
+	#z.Position = Vector3(0, 0, 0)
+	#me.AddModel(z)
+
+	#z.PlayAnim('test')
+
+	for x in range(0,5):
+		for y in range(0,5):
+			f = ObjVolume.LoadFromFile(me, 'Models/room.obj')
+			f.Position = Vector3(x*15, -10, y*15)
+			f.meshes[0].Shader = 'lightmap'
+			cubes.append(f)
+			me.AddModel(f)
+	rotY = 0
+	
 
 def OnUpdate():
 	input.TickCursor()
@@ -55,5 +67,8 @@ def OnUpdate():
 		cube.AddRigidbody ()
 		cube.isVisible = True
 		me.AddModel(cube)
+	if input.GetState(Key_G) == True:
+		pass
+
 
 	cam.AddRotation(game.InputManager.Axis.X,game.InputManager.Axis.Y)

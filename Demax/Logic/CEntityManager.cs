@@ -35,7 +35,7 @@ namespace Demax
 	/// </summary>
 	public class CEntityManager
 	{
-		List<CEntity> entities;
+		public List<CEntity> entities;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Demax.CEntityManager"/> class.

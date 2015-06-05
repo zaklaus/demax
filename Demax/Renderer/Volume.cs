@@ -133,7 +133,15 @@ namespace Demax
 		public List<RigidBody> body = new List<RigidBody>();
         public List<int> indices = new List<int>();
 		public List<Volume> meshes = new List<Volume>();
-		public Dictionary<int, string> matuse = new Dictionary<int, string> ();
+
+        public Dictionary<string, List<Volume>> anims = new Dictionary<string, List<Volume>>();
+        public int cframe = 0;
+        public string cname = "";
+        public float frameStep = 0.0f;
+        public float frameTime = 0.0f;
+        public Volume cvolume;
+
+        public Dictionary<int, string> matuse = new Dictionary<int, string> ();
 		public List<Material> materials = new List<Material> ();
 		public bool markedForDestroy = false;
 		public Tuple<int,int,int> maxIndex = new Tuple<int, int, int> (0,0,0);
@@ -157,6 +165,23 @@ namespace Demax
 			}
 
 		}
+
+        public void TickAnim()
+        {
+            cframe++;
+            if (cframe >= anims[cname].Count)
+                cframe = 0;
+        }
+
+        public void PlayAnim(string anim)
+        {
+            cname = anim;
+        }
+
+        public void LoadAnim(string name, List<Volume> frames)
+        {
+            anims.Add(name, frames);
+        }
 
 		int loadImage(Bitmap image)
 		{
@@ -340,7 +365,9 @@ namespace Demax
 
 		public void CalculateModelMatrix()
 		{ 
-			ModelMatrix = Matrix4.Scale(Scale) * Rotation * Matrix4.CreateTranslation(Position + me.RecursiveTransform().Position);
+			ModelMatrix = Matrix4.Scale(Scale*me.RecursiveTransform().Scale) * (Rotation * Matrix4.CreateRotationX(me.RecursiveTransform().Rotation.X)
+                 * Matrix4.CreateRotationY(me.RecursiveTransform().Rotation.Y)
+                  * Matrix4.CreateRotationZ(me.RecursiveTransform().Rotation.Z)) * Matrix4.CreateTranslation(Position + me.RecursiveTransform().Position);
 		}
  
         public abstract Vector3[] GetVerts();

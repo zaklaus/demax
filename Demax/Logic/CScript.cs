@@ -108,6 +108,7 @@ namespace Demax
 			m_scope.SetVariable ("game", e.game);
             m_scope.SetVariable("gui", e.game.Renderer.guiManager);
 			m_scope.SetVariable ("cell", e.game.Renderer);
+            m_scope.SetVariable("em", e.game.EntityManager);
 
 			m_scope.SetVariable ("input", e.game.InputManager);
 
