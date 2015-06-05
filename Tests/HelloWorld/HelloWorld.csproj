@@ -155,4 +155,12 @@
       <HintPath>..\..\OpenTK\OpenTK.GLControl.dll</HintPath>
     </Reference>
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="Levels\demo.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Scripts\demo.py">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 </Project>

@@ -12,6 +12,11 @@ namespace HelloWorld
 			CCore e = new CCore ();
 
             e.RunWindowed(800, 600, new OpenTK.Graphics.GraphicsMode(32, 16, 8, 4), "HelloWorld", OpenTK.GameWindowFlags.FixedWindow);
+
+            CLevel.LoadLevel("Levels/demo.xml");
+            CLevel.StartLevel("", "", 0);
+            
+            e.Start();
 		}
 	}
 }

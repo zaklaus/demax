@@ -54,6 +54,7 @@ namespace Demax
 		CCore core;
 		Camera mainCamera;
         public GUIManager guiManager = new GUIManager();
+        int framebuffer = 0;
 
 		bool updated, onDemand, loaded = false;
 		float time = 0f;
@@ -89,22 +90,67 @@ namespace Demax
 
 		public Dictionary<string, CShaderProgram> shaders = new Dictionary<string, CShaderProgram>();
 		public Dictionary<string, int> textures = new Dictionary<string, int>();
-
+        public Dictionary<string, ObjVolume> volumes = new Dictionary<string, ObjVolume>();
+        CShaderProgram quadProgram;
 		string activeShader = "default";
 
 		Vector3[] vertdata, coldata, normdata;
 		Vector2[] texcoorddata;
 		int[] indicedata;
-		int ibo_elements;
+		int ibo_elements, fbTexture, depthB, rtexID, rtimeID;
 		//Matrix4[] mviewdata;
-
+        DrawBuffersEnum[] dbe = {DrawBuffersEnum.ColorAttachment0};
 		/// <summary>
 		/// Inits the test.
 		/// </summary>
 		void initTest()
 		{
 			GL.GenBuffers(1, out ibo_elements);
+            GL.GenBuffers(1, out framebuffer);
+            GL.GenRenderbuffers(1, out depthB);
+            fbTexture = GL.GenTexture();
+
+            updateFB(gameRenderer.ClientSize.Width, gameRenderer.ClientSize.Height);
 		}
+
+        void updateFB(int w, int h)
+        {
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
+
+            GL.BindTexture(TextureTarget.Texture2D, fbTexture);
+
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgb, w, h, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgb, PixelType.UnsignedByte, (IntPtr)0);
+
+            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+
+            GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, depthB);
+            GL.RenderbufferStorage(RenderbufferTarget.Renderbuffer, RenderbufferStorage.DepthComponent, w, h);
+            GL.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.Depth, RenderbufferTarget.Renderbuffer, depthB);
+            GL.FramebufferTexture(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, fbTexture, 0);
+            GL.DrawBuffers(1, dbe);
+
+            if(GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete)
+            {
+                CLog.WriteLine("Framebuffer not supported!");
+                return;
+            }
+
+            float[] quad_data = {
+            -1.0f, -1.0f, 0.0f,
+                1.0f, -1.0f, 0.0f,
+            -1.0f,  1.0f, 0.0f,
+            -1.0f,  1.0f, 0.0f,
+                1.0f, -1.0f, 0.0f,
+                1.0f,  1.0f, 0.0f,
+            };
+            
+            quadProgram = new CShaderProgram(DefaultShader.passthrough, "fs_blur.glsl", false, true);
+            rtexID = quadProgram.GetUniform("renderedTexture");
+            rtimeID = quadProgram.GetUniform("time");
+
+            GL.BindBuffer(BufferTarget.ArrayBuffer, quadProgram.GetAttribute("vPosition"));
+            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr) (quad_data.Length * sizeof(float)), quad_data, BufferUsageHint.StaticDraw);
+        }
 
         /// <summary>
         /// Updates our matrices for every existing volume.
@@ -296,7 +342,7 @@ namespace Demax
         public void OnResize(object sender, EventArgs e)
 		{
 			GL.Viewport (gameRenderer.ClientRectangle.X, gameRenderer.ClientRectangle.Y, gameRenderer.ClientRectangle.Width, gameRenderer.ClientRectangle.Height);
-
+            updateFB(gameRenderer.ClientRectangle.Width, gameRenderer.ClientRectangle.Height);
 		}
 
 		/// <summary>
@@ -368,7 +414,7 @@ namespace Demax
             // Updates our matrices.
             //
 			viewmodel = mainCamera.GetViewMatrix();
-			projection = Matrix4.CreatePerspectiveFieldOfView ((float)Math.PI / 4, gameRenderer.Width / (float)gameRenderer.Height, CCore.GetCore().MainCamera.nearPlane, CCore.GetCore().MainCamera.farPlane);
+			projection = Matrix4.CreatePerspectiveFieldOfView ((float)Math.PI/180 * CCore.GetCore().MainCamera.FieldOfView, gameRenderer.Width / (float)gameRenderer.Height, CCore.GetCore().MainCamera.nearPlane, CCore.GetCore().MainCamera.farPlane);
 
             // Updates volume matrices. Yeah, again...
             //
@@ -404,71 +450,45 @@ namespace Demax
 			} else {
 				return;
 			}
-
+            //GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
 			GL.Clear (ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
 			int indiceat = 0;
 
+            
             #region RenderLoop
 
             foreach (CEntity entity in core.EntityManager.GetEntities())
             {
                 foreach (Volume v in entity.GetModels())
                 {
-                    int i = 0;
-                    foreach (Volume m in v.meshes)
+                    if (v.anims.Count == 0 && v.cname == "")
+                        indiceat = render(v, indiceat);
+                    else
                     {
-                        GL.UseProgram(shaders[CShaderProgram.LoadShaderPointer(m.Shader)].ProgramID);
-                        shaders[CShaderProgram.LoadShaderPointer(m.Shader)].EnableVertexAttribArrays();
-
-                        updateTest(m);
-                        if (!m.isVisible)
-                        {
-                            indiceat += m.IndiceCount;
-                            continue;
-                        }
-                        int tex = 0;
-
-                        if (v.materials.Count == 0)
-                            tex = v.TextureID;
-                        else
-                            foreach (var mat in v.materials)
-                                if (mat.name == m.matuse[0])
-                                {
-                                    tex = mat.TextureID;
-                                }
-
-                        // Sends our uniform matrices and binds our texture.
-                        //
-                        GL.BindTexture(TextureTarget.Texture2D, tex);
-                        GL.UniformMatrix4(shaders[activeShader].GetUniform("M"), false, ref v.ModelMatrix);
-                        GL.UniformMatrix4(shaders[activeShader].GetUniform("V"), false, ref v.ViewModelMatrix);
-                        GL.UniformMatrix4(shaders[activeShader].GetUniform("P"), false, ref v.ViewProjectionMatrix);
-                        GL.UniformMatrix4(shaders[activeShader].GetUniform("MVP"), false, ref v.ModelViewProjectionMatrix);
-
-                        // Does the shader support textures? Send texture if yes.
-                        //
-                        if (shaders[activeShader].GetAttribute("maintexture") != -1)
-                        {
-                            GL.Uniform1(shaders[activeShader].GetAttribute("maintexture"), tex);
-                        }
-                        try
-                        {
-                            GL.DrawElements(PrimitiveType.Triangles, m.IndiceCount, DrawElementsType.UnsignedInt, 0);
-                        }
-                        catch (Exception ex)
-                        {
-                            CLog.WriteLine(ex.ToString());
-                        }
-                        indiceat += m.IndiceCount;
-                        i++;
-
-                        shaders[CShaderProgram.LoadShaderPointer(m.Shader)].DisableVertexAttribArrays();
+                        v.TickAnim();
+                        indiceat = render(v.anims[v.cname][v.cframe], indiceat);
                     }
                 }
             }
             
             #endregion
+
+            /*
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+            GL.UseProgram(quadProgram.ProgramID);
+            GL.BindTexture(TextureTarget.Texture2D, fbTexture);
+
+            GL.Uniform1(rtexID, fbTexture);
+            GL.Uniform1(rtimeID, (float)(e.Time * 10.0f));
+
+            quadProgram.EnableVertexAttribArrays();
+            GL.DrawArrays(PrimitiveType.Triangles, 0, 6);
+            quadProgram.DisableVertexAttribArrays();
+            */
+
             guiManager.Draw();
 
 			gameRenderer.SwapBuffers();
@@ -479,6 +499,62 @@ namespace Demax
 
             CScript.BroadcastEvent("OnRender");
 		}
+
+        int render(Volume v, int indiceat)
+        {
+            int i = 0;
+            foreach (Volume m in v.meshes)
+            {
+                GL.UseProgram(shaders[CShaderProgram.LoadShaderPointer(m.Shader)].ProgramID);
+                shaders[CShaderProgram.LoadShaderPointer(m.Shader)].EnableVertexAttribArrays();
+
+                updateTest(m);
+                if (!m.isVisible)
+                {
+                    indiceat += m.IndiceCount;
+                    continue;
+                }
+                int tex = 0;
+
+                if (v.materials.Count == 0)
+                    tex = v.TextureID;
+                else
+                    foreach (var mat in v.materials)
+                        if (mat.name == m.matuse[0])
+                        {
+                            tex = mat.TextureID;
+                        }
+
+                // Sends our uniform matrices and binds our texture.
+                //
+                GL.BindTexture(TextureTarget.Texture2D, tex);
+                GL.UniformMatrix4(shaders[activeShader].GetUniform("M"), false, ref v.ModelMatrix);
+                GL.UniformMatrix4(shaders[activeShader].GetUniform("V"), false, ref v.ViewModelMatrix);
+                GL.UniformMatrix4(shaders[activeShader].GetUniform("P"), false, ref v.ViewProjectionMatrix);
+                GL.UniformMatrix4(shaders[activeShader].GetUniform("MVP"), false, ref v.ModelViewProjectionMatrix);
+
+                // Does the shader support textures? Send texture if yes.
+                //
+                if (shaders[activeShader].GetAttribute("maintexture") != -1)
+                {
+                    GL.Uniform1(shaders[activeShader].GetAttribute("maintexture"), tex);
+                }
+                try
+                {
+                    GL.DrawElements(PrimitiveType.Triangles, m.IndiceCount, DrawElementsType.UnsignedInt, 0);
+                }
+                catch (Exception ex)
+                {
+                    CLog.WriteLine(ex.ToString());
+                }
+                indiceat += m.IndiceCount;
+                i++;
+
+                shaders[CShaderProgram.LoadShaderPointer(m.Shader)].DisableVertexAttribArrays();
+
+            }
+            return indiceat;
+        }
     }
 }
 

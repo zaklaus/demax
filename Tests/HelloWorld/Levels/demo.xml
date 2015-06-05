@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<level name="Demo Map" author="ZaKlaus" version="1.0">
+  <settings>
+    
+  </settings>
+
+  <entities>
+    <entity name="monkey">
+      <volume file="Models/monkey.obj" position="0;0;-80" scale="10;10;10"/>
+    </entity>
+    <entity name="Player" position="0;0;0">
+      <volume file="Models/sky.obj" scale="100;100;100" shader="texture"/>
+      <script file="Scripts/demo.py"/>
+    </entity>
+  </entities>
+</level>

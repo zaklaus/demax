@@ -1,4 +1,5 @@
-﻿//
+﻿using OpenTK;
+//
 //  Author:
 //    Dominik Madarász combatwz.sk@gmail.com
 //
@@ -39,7 +40,7 @@ namespace Demax
 		/// The name.
 		/// </summary>
 		public string Name, Tag;
-		List<Volume> models;
+		public List<Volume> models;
 		List<CEntity> childs;
 		List<CScript> scripts;
 
@@ -90,6 +91,21 @@ namespace Demax
 
 
 		}
+
+        public void SetPosition(Vector3 v)
+        {
+            Transform.Position = v;
+        }
+
+        public void SetRotation(Vector3 v)
+        {
+            Transform.Rotation = v;
+        }
+
+        public void SetScale(Vector3 v)
+        {
+            Transform.Scale = v;
+        }
 
 		/// <summary>
 		/// Adds the script.
