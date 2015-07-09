@@ -15,9 +15,8 @@ namespace CubesTest
 
             e.RunWindowed(1280, 720, new OpenTK.Graphics.GraphicsMode(32, 16, 8, 4), "HelloWorld", OpenTK.GameWindowFlags.Default);
 
-            CEntity x = e.EntityManager.CreateEntity("cubes");
-            x.Transform.Position = new OpenTK.Vector3(0, -6, -20);
-            x.AddScript("Scripts/room.py");
+            CLevel.LoadLevel("Levels/mc.xml");
+            CLevel.StartLevel("", "", 0);
 
             e.Start();
         }

@@ -92,12 +92,14 @@ namespace Demax
 		public Dictionary<string, int> textures = new Dictionary<string, int>();
         public Dictionary<string, ObjVolume> volumes = new Dictionary<string, ObjVolume>();
         CShaderProgram quadProgram;
-		string activeShader = "default";
+		public string activeShader = "default";
+        public string rttShader = "rtt";
 
 		Vector3[] vertdata, coldata, normdata;
 		Vector2[] texcoorddata;
 		int[] indicedata;
-		int ibo_elements, fbTexture, depthB, rtexID, rtimeID;
+		int ibo_elements, fbTexture, dbTexture, depthB, quadB, rtexID, rtimeID;
+        Bitmap fboOutput;
 		//Matrix4[] mviewdata;
         DrawBuffersEnum[] dbe = {DrawBuffersEnum.ColorAttachment0};
 		/// <summary>
@@ -106,50 +108,94 @@ namespace Demax
 		void initTest()
 		{
 			GL.GenBuffers(1, out ibo_elements);
-            GL.GenBuffers(1, out framebuffer);
+            GL.GenFramebuffers(1, out framebuffer);
+            GL.GenBuffers(1, out quadB);
             GL.GenRenderbuffers(1, out depthB);
-            fbTexture = GL.GenTexture();
+            GL.GenTextures(1, out fbTexture);
+            GL.GenTextures(1, out dbTexture);
 
-            updateFB(gameRenderer.ClientSize.Width, gameRenderer.ClientSize.Height);
+            quadProgram = new CShaderProgram(DefaultShader.passthrough, DefaultShader.f_passthrough, false, false);
+            rttShader = "rtt";
+            rtexID = quadProgram.GetUniform("renderedTexture");
+            rtimeID = quadProgram.GetUniform("time");
+
+            shaders.Add("rtt", quadProgram);
+
+            //updateFB(gameRenderer.ClientSize.Width, gameRenderer.ClientSize.Height);
 		}
 
         void updateFB(int w, int h)
         {
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
-
             GL.BindTexture(TextureTarget.Texture2D, fbTexture);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba8, w, h, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, IntPtr.Zero);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Clamp);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Clamp);
+            GL.BindTexture(TextureTarget.Texture2D, 0);
 
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgb, w, h, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgb, PixelType.UnsignedByte, (IntPtr)0);
+            GL.BindTexture(TextureTarget.Texture2D, dbTexture);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent, w, h, 0, OpenTK.Graphics.OpenGL.PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Clamp);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Clamp);
+            GL.BindTexture(TextureTarget.Texture2D, 0);
 
-            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
 
-            GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, depthB);
-            GL.RenderbufferStorage(RenderbufferTarget.Renderbuffer, RenderbufferStorage.DepthComponent, w, h);
-            GL.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.Depth, RenderbufferTarget.Renderbuffer, depthB);
-            GL.FramebufferTexture(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, fbTexture, 0);
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
+            GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2D, fbTexture, 0);
+            GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, TextureTarget.Texture2D, dbTexture, 0);
             GL.DrawBuffers(1, dbe);
+            #region unused
 
-            if(GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete)
-            {
-                CLog.WriteLine("Framebuffer not supported!");
-                return;
-            }
+            //GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2D, 0, 0);
 
-            float[] quad_data = {
-            -1.0f, -1.0f, 0.0f,
-                1.0f, -1.0f, 0.0f,
-            -1.0f,  1.0f, 0.0f,
-            -1.0f,  1.0f, 0.0f,
-                1.0f, -1.0f, 0.0f,
-                1.0f,  1.0f, 0.0f,
-            };
+            //GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, depthB);
+            //GL.RenderbufferStorage(RenderbufferTarget.Renderbuffer, RenderbufferStorage.Depth24Stencil8, w, h);
+            //GL.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthStencilAttachment, RenderbufferTarget.Renderbuffer, 0);
+
+            //GL.BindTexture(TextureTarget.Texture2D, dbTexture);
+
+            //GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent16, w, h, 0, OpenTK.Graphics.OpenGL.PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
+            //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
+            //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+            //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Clamp);
+            //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Clamp);
+            //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.GenerateMipmap, 1);
+            ////GL.FramebufferTexture(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, fbTexture, 0);
+            //GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, TextureTarget.Texture2D, dbTexture, 0);
             
-            quadProgram = new CShaderProgram(DefaultShader.passthrough, "fs_blur.glsl", false, true);
-            rtexID = quadProgram.GetUniform("renderedTexture");
-            rtimeID = quadProgram.GetUniform("time");
-
-            GL.BindBuffer(BufferTarget.ArrayBuffer, quadProgram.GetAttribute("vPosition"));
-            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr) (quad_data.Length * sizeof(float)), quad_data, BufferUsageHint.StaticDraw);
+            #endregion
+            switch(GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer))
+            {
+                case FramebufferErrorCode.FramebufferIncompleteAttachment:
+                    CLog.WriteLine("OpenGL FBO missing attachment");
+                    break;
+                case FramebufferErrorCode.FramebufferUnsupported:
+                    CLog.WriteLine("OpenGL FBO unsupported");
+                    break;
+                case FramebufferErrorCode.FramebufferIncompleteReadBuffer:
+                    CLog.WriteLine("OpenGL FBO incomplete read buffer");
+                    break;
+                case FramebufferErrorCode.FramebufferIncompleteDrawBuffer:
+                    CLog.WriteLine("OpenGL FBO incomplete draw buffer");
+                    break;
+                case FramebufferErrorCode.FramebufferIncompleteFormatsExt:
+                    CLog.WriteLine("OpenGL FBO wrong format ext");
+                    break;
+                case FramebufferErrorCode.FramebufferIncompleteDimensionsExt:
+                    CLog.WriteLine("OpenGL FBO wrong dimension ext");
+                    break;
+                case FramebufferErrorCode.FramebufferComplete:
+                    CLog.WriteLine("Opengl FBO OK");
+                    break;
+                default:
+                    CLog.WriteLine("Opengl FBO FAIL");
+                    break;
+            }
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            //
         }
 
         /// <summary>
@@ -264,7 +310,6 @@ namespace Demax
             gameRenderer = core.GameRenderer;
             mainCamera = core.MainCamera;
             inlineRenderer = core.inlineRenderer;
-
             if (core.type == "window")
             {
                 gameRenderer.Load += OnLoad;
@@ -331,6 +376,7 @@ namespace Demax
             // Further initialization
             //
 			initTest ();
+            //updateFB(gameRenderer.ClientRectangle.Width, gameRenderer.ClientRectangle.Height);
 			loaded = true;
 		}
 
@@ -341,7 +387,8 @@ namespace Demax
         /// <param name="e"></param>
         public void OnResize(object sender, EventArgs e)
 		{
-			GL.Viewport (gameRenderer.ClientRectangle.X, gameRenderer.ClientRectangle.Y, gameRenderer.ClientRectangle.Width, gameRenderer.ClientRectangle.Height);
+			GL.Viewport (0, 0, gameRenderer.ClientRectangle.Width, gameRenderer.ClientRectangle.Height);
+            fboOutput = new Bitmap(gameRenderer.ClientSize.Width, gameRenderer.ClientSize.Height);
             updateFB(gameRenderer.ClientRectangle.Width, gameRenderer.ClientRectangle.Height);
 		}
 
@@ -450,12 +497,29 @@ namespace Demax
 			} else {
 				return;
 			}
-            //GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
-			GL.Clear (ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
+            float[] quadData = new float[] {
+                -1.0f, -1.0f, 0.0f,
+                 1.0f, -1.0f, 0.0f,
+                -1.0f,  1.0f, 0.0f,
+                -1.0f,  1.0f, 0.0f,
+                 1.0f, -1.0f, 0.0f,
+                 1.0f,  1.0f, 0.0f,
+            };
+
+            GL.BindBuffer(BufferTarget.ArrayBuffer, quadB);
+            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)(quadData.Length * sizeof(float)), quadData, BufferUsageHint.StaticDraw);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+
+            GL.Enable(EnableCap.DepthTest);
+            GL.Enable(EnableCap.CullFace);
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
+			GL.Clear (ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+            GL.ClearColor(Color.Green);
+            GL.DrawBuffers(1, dbe);
+            GL.Viewport(0, 0, gameRenderer.ClientSize.Width, gameRenderer.ClientSize.Height);
 			int indiceat = 0;
 
-            
             #region RenderLoop
 
             foreach (CEntity entity in core.EntityManager.GetEntities())
@@ -474,22 +538,30 @@ namespace Demax
             
             #endregion
 
-            /*
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
-            GL.UseProgram(quadProgram.ProgramID);
+            GL.Viewport(0, 0, gameRenderer.ClientSize.Width, gameRenderer.ClientSize.Height);
+            GL.UseProgram(shaders[rttShader].ProgramID);
+            //GL.ActiveTexture(TextureUnit.Texture0);
             GL.BindTexture(TextureTarget.Texture2D, fbTexture);
-
-            GL.Uniform1(rtexID, fbTexture);
-            GL.Uniform1(rtimeID, (float)(e.Time * 10.0f));
-
-            quadProgram.EnableVertexAttribArrays();
+            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+            GL.Uniform1(rtexID, 0);
+            GL.Uniform1(rtimeID, (float)(DateTime.Now.Millisecond * 10.0f));
+            GL.EnableVertexAttribArray(0);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, quadB);
+            GL.VertexAttribPointer(
+                0,
+                3,
+                VertexAttribPointerType.Float,
+                false,
+                0,
+                0
+                );
             GL.DrawArrays(PrimitiveType.Triangles, 0, 6);
-            quadProgram.DisableVertexAttribArrays();
-            */
+            GL.DisableVertexAttribArray(0);
+            
 
-            guiManager.Draw();
+            //guiManager.Draw();
 
 			gameRenderer.SwapBuffers();
 

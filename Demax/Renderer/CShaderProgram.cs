@@ -49,8 +49,21 @@ namespace Demax
 
             "void main(){\n"+
 	        "    gl_Position = vec4(vPosition,1);\n"+
-	        "    UV = (vPosition.xy+vec2(1,1))/2.0;\n"+
+            "    UV = (vPosition.xy+vec2(1,1))/2.0;\n" +
             "}\n"+
+            "";
+
+        public static string f_passthrough =
+            "#version 330\n" +
+            "in vec2 UV;\n" +
+            "out vec3 color;\n" +
+
+            "uniform sampler2D renderedTexture;\n" +
+            "uniform float time;\n" +
+
+            "void main(){\n" +
+            "    color = texture(renderedTexture, UV).xyz;\n" +
+            "}\n" +
             "";
 
         public static string vs_fallback =

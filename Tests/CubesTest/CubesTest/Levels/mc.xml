@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<level name="Demo Map" author="ZaKlaus" version="1.0">
+  <settings>
+
+  </settings>
+
+  <entities>
+    <entity name="Player" position="0;0;0">
+      <script file="Scripts/supercraft.py"/>
+    </entity>
+  </entities>
+</level>

@@ -42,7 +42,7 @@ namespace Demax
 		/// The focused.
 		/// </summary>
 		public bool Focused = true;
-		Dictionary<Key,bool> keys;
+		Dictionary<string,bool> keys;
 
 		Vector2 lastMousePos = new Vector2();
 
@@ -55,7 +55,7 @@ namespace Demax
 		/// Gets the keys.
 		/// </summary>
 		/// <value>The keys.</value>
-		public Dictionary<Key,bool> Keys
+		public Dictionary<string,bool> Keys
 		{
 			get {
 				return keys;
@@ -67,13 +67,13 @@ namespace Demax
 		/// </summary>
 		/// <returns><c>true</c>, if state was gotten, <c>false</c> otherwise.</returns>
 		/// <param name="id">Identifier.</param>
-		public bool GetState(int id)
+		public bool GetState(string key)
 		{
 			try{
-				return keys [(Key)id];
+				return keys [key];
 			}
 			catch{
-				keys.Add ((Key)id, false);
+				keys.Add (key, false);
 				return false;
 			}
 		}
@@ -85,7 +85,7 @@ namespace Demax
 		{
 			core = CCore.GetCore ();
 
-			keys = new Dictionary<Key,bool> ();
+			keys = new Dictionary<string,bool> ();
 
 			/*Key latestKey = Key.Z;
 			var ekeys = Enum.GetValues (typeof(Key));
@@ -130,15 +130,17 @@ namespace Demax
 		/// <param name="e">E.</param>
 		public void OnKeyDown(object sender, KeyboardKeyEventArgs e)
 		{
-			//CLog.WriteLine ("Key Down: " + e.Key.ToString ());
-			try{
-				keys [e.Key] = true;
+            try{
+                if (!keys[e.Key.ToString()])
+                {
+                    CScript.BroadcastEvent("OnKeyDown", e.Key.ToString());
+                    keys[e.Key.ToString()] = true;
+                }
 			}
 			catch{
-				keys.Add (e.Key, true);
+                CScript.BroadcastEvent("OnKeyDown", e.Key.ToString());
+                keys.Add(e.Key.ToString(), true);
 			}
-
-            CScript.BroadcastEvent("OnKeyDown", e.Key.ToString());
 		}
 
 		/// <summary>
@@ -150,10 +152,10 @@ namespace Demax
 		{
 			//CLog.WriteLine ("Key Up: " + e.Key.ToString ());
 			try{
-				keys [e.Key] = false;
+                keys[e.Key.ToString()] = false;
 			}
 			catch{
-				keys.Add (e.Key, false);
+                keys.Add(e.Key.ToString(), false);
 			}
 
             CScript.BroadcastEvent("OnKeyUp", e.Key.ToString());
@@ -166,7 +168,7 @@ namespace Demax
 		/// <param name="e">E.</param>
 		public void OnKeyPress(object sender, KeyPressEventArgs e)
 		{
-            CScript.BroadcastEvent("OnKeyPress", e.KeyChar.ToString());
+            //CScript.BroadcastEvent("OnKeyPress", e.KeyChar.ToString());
 		}
 	}
 }
