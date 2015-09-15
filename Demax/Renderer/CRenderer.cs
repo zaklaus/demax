@@ -471,7 +471,18 @@ namespace Demax
 					v.ViewProjectionMatrix = projection;
 					v.ViewModelMatrix = viewmodel;
 					v.ModelViewProjectionMatrix = v.ModelMatrix * v.ViewModelMatrix * v.ViewProjectionMatrix;
-				}
+
+                    foreach(var anim in v.anims)
+                    {
+                        foreach(Volume f in anim.Value)
+                        { 
+                            f.CalculateModelMatrix();
+                            f.ViewProjectionMatrix = projection;
+                            f.ViewModelMatrix = viewmodel;
+                            f.ModelViewProjectionMatrix = f.ModelMatrix * f.ViewModelMatrix * f.ViewProjectionMatrix;
+                        }
+                    }
+                }
 			}
 			
 			GL.ClearColor (Color.CornflowerBlue);
@@ -531,6 +542,7 @@ namespace Demax
                     else
                     {
                         v.TickAnim();
+
                         indiceat = render(v.anims[v.cname][v.cframe], indiceat);
                     }
                 }

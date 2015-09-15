@@ -7,10 +7,15 @@ rand = Random()
 for x in range(30):
 	old = ObjVolume.LoadFromFile(me, 'Models/wpo.obj')
 	old.meshes[0].Shader = 'light'
-	old.Position = Vector3(0+x*30.0,0.0,0.0)
-	old.AddLOD('Models/wpo_low.obj', 20)
-	CLog.WriteLine(old.LOD.Count.ToString())
+	old.Position = Vector3(0+x*30.0,0.0,-50.0)
 	me.AddModel(old)
+old.AddLOD('Models/wpo_low.obj', 20)
+
+anim = ObjVolume.LoadFromFileAnim(me, 'explode', 'Models/anim', 4)
+anim.PlayAnim('explode')
+anim.FrameStep(50)
+anim.Position = Vector3(10,0,-5)
+me.AddModel(anim)
 
 def OnStart():
 	cam.Move(0.0,5.0,0.0)

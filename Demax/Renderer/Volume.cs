@@ -145,7 +145,7 @@ namespace Demax
         public int cframe = 0;
         public string cname = "";
         public float frameStep = 0.0f;
-        public float frameTime = 0.0f;
+        public DateTime frameTime = DateTime.Now;
         public Volume cvolume;
 
         public Dictionary<int, string> matuse = new Dictionary<int, string> ();
@@ -175,6 +175,19 @@ namespace Demax
 
         public void TickAnim()
         {
+            if (frameStep != 0)
+                if ((DateTime.Now - frameTime).Milliseconds > frameStep)
+                {
+                    frameTime = DateTime.Now;
+                    cframe++;
+                    if (cframe >= anims[cname].Count)
+                        cframe = 0;
+                    return;
+                }
+                else
+                {
+                    return;
+                }
             cframe++;
             if (cframe >= anims[cname].Count)
                 cframe = 0;
@@ -183,6 +196,11 @@ namespace Demax
         public void PlayAnim(string anim)
         {
             cname = anim;
+        }
+
+        public void FrameStep(float step)
+        {
+            frameStep = step;
         }
 
         public void LoadAnim(string name, List<Volume> frames)

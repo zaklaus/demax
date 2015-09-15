@@ -151,20 +151,20 @@ namespace Demax
             List<ObjVolume> a = new List<ObjVolume>();
 
             DirectoryInfo dir = new DirectoryInfo(dirname);
+            CLog.WriteLine("Loading animation " + name + "...");
             
             for(int i = 0; i < dir.GetFiles().Length; i++)
             {
-                if (skip != 0)
+                CLog.WriteLine(i.ToString());
+                    if (i < dir.GetFiles().Length)
+                        if (dir.GetFiles()[i].Extension == ".obj")
+                            a.Add(LoadFromFile(en, dir.GetFiles()[i].FullName));
+                
+                if (skip != 0 && i % 2 == 1)
                 {
-                    if ((i % skip) == 0)
-                    {
-                        i += skip;
-                        continue;
-                    }
-                }
+                    i += skip - 1;
 
-                if (dir.GetFiles()[i].Extension == ".obj")
-                    a.Add(LoadFromFile(en, dir.GetFiles()[i].FullName));
+                }
             }
             o.LoadAnim(name, a.ToList<Volume>());
             return o;
