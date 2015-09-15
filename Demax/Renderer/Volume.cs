@@ -136,6 +136,10 @@ namespace Demax
 		public List<RigidBody> body = new List<RigidBody>();
         public List<int> indices = new List<int>();
 		public List<Volume> meshes = new List<Volume>();
+        public Dictionary<float, Volume> LOD = new Dictionary<float, Volume>();
+
+        public Vector3 BBoxMin;
+        public Vector3 BBoxMax;
 
         public Dictionary<string, List<Volume>> anims = new Dictionary<string, List<Volume>>();
         public int cframe = 0;
@@ -239,7 +243,85 @@ namespace Demax
 			}
 		}
 
+        public void AddLOD(string filename, float dist)
+        {
+            try
+            {
+                if (CCore.GetCore().Renderer.volumes.ContainsKey(filename))
+                {
+                    LOD.Add(dist, (ObjVolume)CCore.GetCore().Renderer.volumes[filename].Clone());
+                    return;
+                }
 
+            
+                Volume o = ObjVolume.LoadFromFile(me, filename);
+                LOD.Add(dist, o);
+            }
+            catch { }
+        }
+
+        public void CalculateBoundingBox()
+        {
+            foreach(var m in meshes)
+            {
+                m.CalculateBoundingBox();
+            }
+
+            float x = 0.0f;
+            float y = 0.0f;
+            float z = 0.0f;
+
+            float x1 = 0.0f;
+            float y1 = 0.0f;
+            float z1 = 0.0f;
+            
+            if (vertices == null)
+            {
+                return;
+            }
+
+            Vector3[] verts = new Vector3[2];
+
+            foreach (var vec in vertices)
+            {
+                //Min
+                
+                if (x > vec[0])
+                {
+                    x = vec[0];
+                }
+
+                if (y > vec[1])
+                {
+                    y = vec[1];
+                }
+
+                if (z > vec[2])
+                {
+                    z = vec[2];
+                }
+
+                // Max
+
+                if (x1 < vec[0])
+                {
+                    x1 = vec[0];
+                }
+
+                if (y1 < vec[1])
+                {
+                    y1 = vec[1];
+                }
+
+                if (z1 < vec[2])
+                {
+                    z1 = vec[2];
+                }
+            }
+
+            BBoxMin = new Vector3(x, y, z);
+            BBoxMax = new Vector3(x1, y1, z1);
+        }
 
 		public void SetPosition(Vector3 x)
 		{

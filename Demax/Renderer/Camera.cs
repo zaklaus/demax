@@ -92,14 +92,16 @@ namespace Demax
 		/// <returns>The view matrix.</returns>
 		public Matrix4 GetViewMatrix()
 		{
-            if(LookAt!=Vector3.Zero)
-                return Matrix4.LookAt(Position, Position + LookAt, Vector3.UnitY);
+            //if(LookAt!=Vector3.Zero)
+            //    return Matrix4.LookAt(Position, Position + LookAt, Vector3.UnitY);
 
 			Vector3 lookat = new Vector3();
 
 			lookat.X = (float)(Math.Sin((float)Orientation.X) * Math.Cos((float)Orientation.Y));
 			lookat.Y = (float)Math.Sin((float)Orientation.Y);
             lookat.Z = ((float)(Math.Cos((float)Orientation.X) * Math.Cos((float)Orientation.Y)));
+
+            LookAt = lookat;
 
             return Matrix4.LookAt(Position, Position + lookat, Vector3.UnitY);
 		}

@@ -202,7 +202,7 @@ namespace Demax
 					{
 						if (line.StartsWith ("mtllib ")) {
 							String temp = line.Substring (7);
-							CLog.WriteLine("Model MTL: "+temp);
+							CLog.WriteLine("Model MTL: "+filename);
 							try
 							{
 								using (StreamReader reader2 = new StreamReader(new FileStream(Path.Combine(Path.GetDirectoryName(filename),temp), FileMode.Open, FileAccess.Read)))
@@ -240,7 +240,7 @@ namespace Demax
 							}
 							catch (Exception e)
 							{
-								CLog.WriteLine("Error loading file: {0}", temp);
+								CLog.WriteLine(string.Format("Error loading file: {0}, {1}", temp, e.ToString()));
 							}
 						}
 					}

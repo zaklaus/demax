@@ -575,16 +575,75 @@ namespace Demax
         int render(Volume v, int indiceat)
         {
             int i = 0;
+
+            Vector3 uniformPosition = (v.me.RecursiveTransform().Position + v.Position);
+            Volume ma = v;
+            float oDist = Extensions.GetDistance3D(uniformPosition, mainCamera.Position);
+            foreach (var lod in v.LOD)
+            {
+                if (oDist > lod.Key)
+                {
+                    if (lod.Value != null)
+                        ma = lod.Value;
+                }
+            }
+
             foreach (Volume m in v.meshes)
             {
-                GL.UseProgram(shaders[CShaderProgram.LoadShaderPointer(m.Shader)].ProgramID);
-                shaders[CShaderProgram.LoadShaderPointer(m.Shader)].EnableVertexAttribArrays();
-
-                updateTest(m);
                 if (!m.isVisible)
                 {
                     indiceat += m.IndiceCount;
                     continue;
+                }
+
+                // HEAVY: per-vertex check
+                float farDist = 0.0f;
+                float nearDist = 0xDEADBEEF;
+                Vector3 farPosition = Vector3.Zero;
+                Vector3 nearPosition = Vector3.Zero;
+                uniformPosition = (m.me.RecursiveTransform().Position + v.Position + m.Position);
+
+                foreach (var vert in m.vertices)
+                {
+                    float dist = Extensions.GetDistance3D(uniformPosition + vert, mainCamera.Position);
+                    if (dist > farDist)
+                    {
+                        farDist = dist;
+                        farPosition = uniformPosition + vert;
+                    }
+                    if (dist < nearDist)
+                    {
+                        nearDist = dist;
+                        nearPosition = uniformPosition + vert;
+                    }
+                }
+                m.CalculateBoundingBox();
+                if (!Extensions.IsInside3D(uniformPosition + m.BBoxMin, uniformPosition + m.BBoxMax, mainCamera.Position))
+                {
+                    Vector3 target = (farPosition - mainCamera.Position).Normalized();
+                    Vector3 dir = mainCamera.LookAt;
+                    float place = 0.0f;
+                    Vector3.Dot(ref target, ref dir, out place);
+                    
+                    if (farDist > 5.0f && place <= 0)
+                    {
+                        continue;
+                    }
+                    else if (farDist > mainCamera.farPlane && place > 0)
+                    {
+                        continue;
+                    }
+                }
+
+                GL.UseProgram(shaders[CShaderProgram.LoadShaderPointer(m.Shader)].ProgramID);
+                shaders[CShaderProgram.LoadShaderPointer(m.Shader)].EnableVertexAttribArrays();
+
+                try {
+                    updateTest(ma.meshes[i]);
+                }
+                catch
+                {
+                    updateTest(m);
                 }
                 int tex = 0;
 

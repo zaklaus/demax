@@ -55,6 +55,28 @@ namespace Demax
             return v;
         }
 
+        public static bool Compare(Vector3 first, Vector3 second)
+        {
+            if (
+               (first[0] <= second[0])
+            && (first[1] <= second[1])
+            && (first[2] <= second[2])
+            )
+                return true;
+            return false;
+        }
+
+        public static bool IsInside3D(Vector3 start, Vector3 end, Vector3 point)
+        {
+            if (
+                (point.X > start.X && point.X < end.X)
+                && (point.Y > start.Y && point.Y < end.Y)
+                && (point.Z > start.Z && point.Z < end.Z)
+                )
+                return true;
+            return false;
+        }
+
         public static string GetString(this Vector3 v)
         {
             return string.Format("{0};{1};{2}", v.X, v.Y, v.Z);
@@ -63,6 +85,21 @@ namespace Demax
         public static bool TryParseGlobal(string s, out float f)
         {
             return float.TryParse(s, NumberStyles.Any, new CultureInfo ("en-US"), out f);
+        }
+
+        /// <summary>
+        /// Get distance between two 3D points.
+        /// </summary>
+        /// <param name="first"></param>
+        /// <param name="second"></param>
+        /// <returns></returns>
+        public static float GetDistance3D(Vector3 first, Vector3 second)
+        {
+            float deltaX = second.X - first.X;
+            float deltaY = second.Y - first.Y;
+            float deltaZ = second.Z - first.Z;
+
+            return (float)Math.Sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
         }
     }
 }

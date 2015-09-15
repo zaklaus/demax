@@ -4,14 +4,13 @@ cell.SetZeroKill(-100)
 
 rand = Random()
 
-sky = ObjVolume.LoadFromFile(me, 'Models/sky.obj')
-sky.Scale = Vector3(200,200,200)
-sky.meshes[0].Shader = 'texture'
-me.AddModel(sky)
-
-old = ObjVolume.LoadFromFile(me, 'Models/wpo.obj')
-old.meshes[0].Shader = 'light'
-me.AddModel(old)
+for x in range(30):
+	old = ObjVolume.LoadFromFile(me, 'Models/wpo.obj')
+	old.meshes[0].Shader = 'light'
+	old.Position = Vector3(0+x*30.0,0.0,0.0)
+	old.AddLOD('Models/wpo_low.obj', 20)
+	CLog.WriteLine(old.LOD.Count.ToString())
+	me.AddModel(old)
 
 def OnStart():
 	cam.Move(0.0,5.0,0.0)
@@ -23,9 +22,9 @@ def OnKeyDown(key):
 		print('42 ')
 
 def OnUpdate():
-	global sky
+	#global sky
 	input.TickCursor()
-	sky.Position = cam.Position
+	#sky.Position = cam.Position
 	
 	if input.GetState('W'):
 		cam.Move(0.0,1.0,0.0)
