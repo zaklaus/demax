@@ -34,24 +34,31 @@ using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Input;
 using Jitter.Collision;
+using System.Linq;
 using Jitter;
 using Jitter.DataStructures;
 using Jitter.Dynamics;
 using Jitter.LinearMath;
 using System.Drawing.Imaging;
+using System.Text;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Demax
 {
+    [Serializable]
 	public class Material
 	{
 		public int TextureID;
 		public string name;
+        public string filename;
+        Bitmap imgdata;
 
 		public void LoadTexture(string file)
 		{
+            filename = file;
 			try {
 				if(!CCore.GetCore().Renderer.textures.ContainsKey(file)){
-					this.TextureID = this.loadImage (file);	
+					this.TextureID = loadImage (file);	
 					CCore.GetCore().Renderer.textures.Add(file,this.TextureID);
 				}
 				else
@@ -62,7 +69,26 @@ namespace Demax
 
 		}
 
-		int loadImage(Bitmap image)
+        public void LoadTexture()
+        {
+            try
+            {
+                if (!CCore.GetCore().Renderer.textures.ContainsKey(filename))
+                {
+                    this.TextureID = loadImage(imgdata);
+                    CCore.GetCore().Renderer.textures.Add(filename, this.TextureID);
+                }
+                else
+                    this.TextureID = CCore.GetCore().Renderer.textures[filename];
+            }
+            catch (Exception ex)
+            {
+                CLog.WriteLine("IO Error: " + ex.ToString());
+            }
+
+        }
+
+        public static int loadImage(Bitmap image)
 		{
 			int texID = GL.GenTexture();
 
@@ -88,7 +114,7 @@ namespace Demax
 		/// </summary>
 		/// <returns>The image.</returns>
 		/// <param name="filename">Filename.</param>
-		public int loadImage(string filename)
+		public static int loadImage(string filename)
 		{
 			try
 			{
@@ -96,8 +122,9 @@ namespace Demax
 				int id = loadImage(file);
 				return id;
 			}
-			catch
+			catch (Exception ex)
 			{
+                CLog.WriteLine(ex.ToString());
 				return -1;
 			}
 		}
@@ -105,16 +132,38 @@ namespace Demax
 		public Material(string name, string texture)
 		{
 			this.name = name;
-			this.LoadTexture (texture);
+			LoadTexture (texture);
 		}
+
+        public Material(string name, string texture, Bitmap imgdata)
+        {
+            this.name = name;
+            this.imgdata = imgdata;
+            filename = texture;
+            LoadTexture();
+        }
 	}
 
-	public abstract class Volume
+    [Serializable]
+    public class TransportVolume
+    {
+        public Vector3[] vertices;
+        public Vector3[] colors;
+        public Vector3[] normals;
+        public Vector2[] texturecoords;
+
+        public Dictionary<int, string> matuse = new Dictionary<int, string>();
+        public List<Material> materials = new List<Material>();
+        public List<int> indices = new List<int>();
+    }
+    
+    public abstract class Volume : ICloneable
 	{
-		public Vector3 Position = Vector3.Zero;
-		public Matrix4 Rotation = Matrix4.Identity;
+        public Vector3 Position = Vector3.Zero;
+        public Matrix4 Rotation = Matrix4.Identity;
         public Vector3 Scale = Vector3.One;
 		public CEntity me;
+
         public Vector3[] vertices;
         public Vector3[] colors;
         public Vector3[] normals;
@@ -137,7 +186,6 @@ namespace Demax
         public List<int> indices = new List<int>();
 		public List<Volume> meshes = new List<Volume>();
         public Dictionary<float, Volume> LOD = new Dictionary<float, Volume>();
-
         public Vector3 BBoxMin;
         public Vector3 BBoxMax;
 
@@ -158,7 +206,12 @@ namespace Demax
 			me = x;
 		}
 
-		public void LoadTexture(string file)
+        public object Clone()
+        {
+            return this.MemberwiseClone();
+        }
+
+        public void LoadTexture(string file)
 		{
 			try {
 				if(!CCore.GetCore().Renderer.textures.ContainsKey(file)){
@@ -261,23 +314,6 @@ namespace Demax
 			}
 		}
 
-        public void AddLOD(string filename, float dist)
-        {
-            try
-            {
-                if (CCore.GetCore().Renderer.volumes.ContainsKey(filename))
-                {
-                    LOD.Add(dist, (ObjVolume)CCore.GetCore().Renderer.volumes[filename].Clone());
-                    return;
-                }
-
-            
-                Volume o = ObjVolume.LoadFromFile(me, filename);
-                LOD.Add(dist, o);
-            }
-            catch { }
-        }
-
         public void CalculateBoundingBox()
         {
             foreach(var m in meshes)
@@ -340,14 +376,25 @@ namespace Demax
             BBoxMin = new Vector3(x, y, z);
             BBoxMax = new Vector3(x1, y1, z1);
         }
-
-		public void SetPosition(Vector3 x)
+        
+		public void SetPosition(Vector3 x, bool rec=false)
 		{
 			Position = x;
 
 			if(body!=null)
                 foreach(var r in body)
 				r.Position = new JVector(Position.X+me.RecursiveTransform().Position.X,Position.Y+me.RecursiveTransform().Position.Y,Position.Z+me.RecursiveTransform().Position.Z);
+
+            if (rec)
+            {
+                foreach (var a in anims.Values)
+                {
+                    foreach (var b in a)
+                    {
+                        b.Position = Position;
+                    }
+                }
+            }
 		}
 
 		public void SetStatic(bool state)
@@ -361,6 +408,8 @@ namespace Demax
 			}
 		}
 
+        
+
 		public void ZeroGravity(bool state)
 		{
 			if (body != null)
@@ -368,33 +417,60 @@ namespace Demax
 				r.AffectedByGravity = !state;
 		}
 
-		public void SetRotation(Vector3 x)
+        void RotationRec(bool rec)
+        {
+            if (rec)
+            {
+                foreach (var a in anims.Values)
+                {
+                    foreach (var b in a)
+                    {
+                        b.Rotation = Rotation;
+                    }
+                }
+            }
+        }
+
+		public void SetRotation(Vector3 x, bool rec=false)
 		{
 			Rotation = Matrix4.CreateRotationX(x.X) * Matrix4.CreateRotationY(x.Y) * Matrix4.CreateRotationZ(x.Z);
 
 			if (body != null)
                 foreach (var r in body)
-				r.Orientation = MatrixToJMatrix (Rotation);
+				    r.Orientation = MatrixToJMatrix (Rotation);
+
+            RotationRec(rec);
 		}
 
-		public void SetRotation(Matrix4 x)
+		public void SetRotation(Matrix4 x, bool rec=false)
 		{
 			Rotation = x;
 
 			if (body != null)
                 foreach (var r in body)
-				r.Orientation = MatrixToJMatrix (Rotation);
+				    r.Orientation = MatrixToJMatrix (Rotation);
 		}
 
 
-		public void SetScale(Vector3 x)
+		public void SetScale(Vector3 x, bool rec=false)
 		{
 			Scale = x;
 
 			if(body!=null)
                 foreach (var r in body)
-				r.Shape = new Jitter.Collision.Shapes.BoxShape(Scale.X+me.RecursiveTransform().Scale.X,Scale.Y+me.RecursiveTransform().Scale.Y,Scale.Z+me.RecursiveTransform().Scale.Z);
-		}
+				    r.Shape = new Jitter.Collision.Shapes.BoxShape(Scale.X+me.RecursiveTransform().Scale.X,Scale.Y+me.RecursiveTransform().Scale.Y,Scale.Z+me.RecursiveTransform().Scale.Z);
+
+            if (rec)
+            {
+                foreach (var a in anims.Values)
+                {
+                    foreach (var b in a)
+                    {
+                        b.Scale = Scale;
+                    }
+                }
+            }
+        }
 
 		/// <summary>
 		/// Gets the normals.

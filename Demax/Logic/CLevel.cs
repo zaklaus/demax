@@ -124,7 +124,7 @@ namespace Demax
 
                     if (childNode.Name == "volume")
                     {
-                        string vtype = "obj";
+                        string vtype = "mod";
                         string rigidbody = "false";
                         string shader = "light";
                         string isStatic = "false";
@@ -148,7 +148,23 @@ namespace Demax
 
                         if(vtype=="obj")
                         {
-                            ObjVolume o = ObjVolume.LoadFromFile(root, childNode.Attributes["file"].InnerText);
+                            ObjVolume o = ObjVolume.LoadOBJ(root, childNode.Attributes["file"].InnerText);
+                            o.SetPosition(vposition);
+                            o.SetRotation(vrotation);
+                            o.SetScale(vscale);
+                            foreach (var m in o.meshes)
+                            {
+                                m.Shader = shader;
+                            }
+                            if (rigidbody == "true")
+                                o.AddRigidbody();
+                            if (isStatic == "true")
+                                o.SetStatic(true);
+                            root.AddModel(o);
+                        }
+                        else if (vtype == "mod")
+                        {
+                            ObjVolume o = ObjVolume.ImportModel(root, childNode.Attributes["file"].InnerText);
                             o.SetPosition(vposition);
                             o.SetRotation(vrotation);
                             o.SetScale(vscale);

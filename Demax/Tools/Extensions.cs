@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -64,6 +65,16 @@ namespace Demax
             )
                 return true;
             return false;
+        }
+
+        public static void WriteByteArray(this FileStream s, string data)
+        {
+            foreach (var a in data.ToCharArray())
+            {
+                s.WriteByte(Encoding.UTF8.GetBytes(new char[] { a })[0]);
+            }
+
+            s.WriteByte(0);
         }
 
         public static bool IsInside3D(Vector3 start, Vector3 end, Vector3 point)

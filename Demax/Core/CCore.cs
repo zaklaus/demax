@@ -41,10 +41,10 @@ using Jitter.Collision;
 
 namespace Demax
 {
-	/// <summary>
-	/// Main class handling all aspects of engine.
-	/// </summary>
-	public class CCore
+    /// <summary>
+    /// Main class handling all aspects of engine.
+    /// </summary>
+    public class CCore
 	{
 		static CCore instance;
 
@@ -148,7 +148,7 @@ namespace Demax
 			gameRenderer.Close ();
 
 		}
-
+        
         /// <summary>
         /// Handles physics for us;
         /// </summary>

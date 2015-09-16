@@ -35,11 +35,19 @@ namespace Demax
 {
     public class CLog
     {
-        public static void WriteLine(string line, string caption="Main", string file="demax_log.txt")
+        public static void WriteLine(string line, string caption = "Main", string file = "demax_log.txt")
         {
             Console.WriteLine("[{0}] {1}", caption, line);
 
             System.IO.File.AppendAllText(file, string.Format("[{0}] {1}" + Environment.NewLine, caption, line), Encoding.UTF8);
+        }
+
+        public static void Write(string line, string caption = "Main", string file = "demax_log.txt")
+        {
+            string form = string.Format("[{0}] {1}", caption, line);
+            Console.Write("\r{0}", form);
+
+            //System.IO.File.AppendAllText(file, string.Format("[{0}] {1}" + Environment.NewLine, caption, line), Encoding.UTF8);
         }
     }
 }

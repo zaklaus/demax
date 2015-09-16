@@ -5,17 +5,22 @@ cell.SetZeroKill(-100)
 rand = Random()
 
 for x in range(30):
-	old = ObjVolume.LoadFromFile(me, 'Models/wpo.obj')
+	old = ObjVolume.ImportModel(me, 'Models/wpo')
 	old.meshes[0].Shader = 'light'
 	old.Position = Vector3(0+x*30.0,0.0,-50.0)
+	old.AddLOD('Models/wpo_low', 20, 'mod')
 	me.AddModel(old)
-old.AddLOD('Models/wpo_low.obj', 20)
 
-anim = ObjVolume.LoadFromFileAnim(me, 'explode', 'Models/anim', 4)
-anim.PlayAnim('explode')
-anim.FrameStep(50)
-anim.Position = Vector3(10,0,-5)
-me.AddModel(anim)
+colac = ObjVolume.LoadOBJ(me, 'Models/untitled')
+colac.Scale = Vector3(10, 10, 10)
+me.AddModel(colac)
+
+for x in range(5):
+	anim = ObjVolume.ImportAnim(me, 'explode', 'Models/anim', 0)
+	anim.PlayAnim('explode')
+	anim.FrameStep(0)
+	anim.SetPosition(Vector3(-5+x*4.0,0.0,-10.0), True)
+	me.AddModel(anim)
 
 def OnStart():
 	cam.Move(0.0,5.0,0.0)

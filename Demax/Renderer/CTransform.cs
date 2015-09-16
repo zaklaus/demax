@@ -35,7 +35,8 @@ using OpenTK.Input;
 
 namespace Demax
 {
-	public class CTransform
+    [Serializable]
+    public class CTransform
 	{
 		public Vector3 Position, Rotation, Scale;
 

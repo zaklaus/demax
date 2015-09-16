@@ -31,10 +31,11 @@ using System.Collections.Generic;
 
 namespace Demax
 {
-	/// <summary>
-	/// Entity.
-	/// </summary>
-	public class CEntity
+    /// <summary>
+    /// Entity.
+    /// </summary>
+    [Serializable]
+    public class CEntity
 	{
 		/// <summary>
 		/// The name.

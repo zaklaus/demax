@@ -51,7 +51,8 @@ using System.Drawing.Imaging;
 
 namespace Demax
 {
-	public class ObjVolume : Volume, ICloneable
+    [Serializable]
+    public class ObjVolume : Volume, ICloneable
 	{
 
 
@@ -145,7 +146,7 @@ namespace Demax
             return this.MemberwiseClone();
         }
 
-        public static ObjVolume LoadFromFileAnim(CEntity en, string name, string dirname, int skip=0)
+        public static ObjVolume LoadAnimOBJ(CEntity en, string name, string dirname, int skip=0)
         {
             ObjVolume o = new ObjVolume(en);
             List<ObjVolume> a = new List<ObjVolume>();
@@ -155,18 +156,88 @@ namespace Demax
             
             for(int i = 0; i < dir.GetFiles().Length; i++)
             {
-                CLog.WriteLine(i.ToString());
                     if (i < dir.GetFiles().Length)
                         if (dir.GetFiles()[i].Extension == ".obj")
-                            a.Add(LoadFromFile(en, dir.GetFiles()[i].FullName));
-                
+                            a.Add(LoadOBJ(en, dir.GetFiles()[i].FullName));
+
+                string z = (((float)i / (float)dir.GetFiles("*.obj").Length) * 100).ToString();
+
+                CLog.Write("% " + z);
+
                 if (skip != 0 && i % 2 == 1)
                 {
                     i += skip - 1;
 
                 }
             }
+            CLog.WriteLine("Done!");
             o.LoadAnim(name, a.ToList<Volume>());
+            return o;
+        }
+
+        public static ObjVolume ImportAnim(CEntity en, string name, string dirname, int skip = 0)
+        {
+            ObjVolume o = new ObjVolume(en);
+            if (CCore.GetCore().Renderer.animations.ContainsKey(name))
+            {
+                List<ObjVolume> an = new List<ObjVolume>();
+
+                foreach (var na in CCore.GetCore().Renderer.animations[name].ToList<Volume>())
+                {
+                    an.Add((ObjVolume)na.Clone());
+                }
+
+                o.LoadAnim(name, an.ToList<Volume>());
+                return o;
+            }
+            List<ObjVolume> a = new List<ObjVolume>();
+
+            DirectoryInfo dir = new DirectoryInfo(dirname);
+            CLog.WriteLine("Loading animation " + name + "...");
+            
+            for (int i = 0; i < dir.GetFiles().Length; i++)
+            {
+                if (i < dir.GetFiles().Length)
+                    if (dir.GetFiles()[i].Extension == ".mod")
+                    {
+                        ObjVolume m = null;
+                        if (i == 0)
+                            m = ImportModel(en, dir.GetFiles()[i].FullName.Split('.')[0], true, dir.GetFiles()[i].FullName.Split('.')[0]);
+                        else
+                            m = ImportModel(en, dir.GetFiles()[i].FullName.Split('.')[0], false);
+                        if (a.Count > 0)
+                        {
+                            m.indices = a[0].indices;
+                            m.normals = a[0].normals;
+                            m.texturecoords = a[0].texturecoords;
+                            m.materials = a[0].materials;
+                            m.matuse = a[0].matuse;
+                            int j = 0;
+                            foreach (var n in a[0].meshes)
+                            {
+                                m.meshes[j].materials = n.materials;
+                                m.meshes[j].matuse = n.matuse;
+                                j++;
+                            }
+                        }
+                        a.Add(m);
+                    }
+                string z = (((float)i / (float)dir.GetFiles("*.mod").Length) * 100).ToString();
+
+                CLog.Write("% " + z);
+
+                if (skip != 0 && i % 2 == 1)
+                {
+                    i += skip - 1;
+
+                }
+            }
+            CLog.WriteLine("Done!");
+            o.LoadAnim(name, a.ToList<Volume>());
+
+            if (!CCore.GetCore().Renderer.animations.ContainsKey(name))
+                CCore.GetCore().Renderer.animations.Add(name, a.ToList());
+
             return o;
         }
 
@@ -178,21 +249,23 @@ namespace Demax
             foreach(var file in dir.GetFiles())
             {
                 if(file.Extension == ".obj")
-                    a.Add(LoadFromFile(en, file.FullName));
+                    a.Add(LoadOBJ(en, file.FullName));
             }
 
             return a.ToArray();
         }
 
-		public static ObjVolume LoadFromFile(CEntity en, string filename)
+		public static ObjVolume LoadOBJ(CEntity en, string filename)
 		{
             if (CCore.GetCore().Renderer.volumes.ContainsKey(filename))
                 return (ObjVolume) CCore.GetCore().Renderer.volumes[filename].Clone();
 
-			ObjVolume obj = new ObjVolume(en);
+            //filename = filename + ".obj";
+
+            ObjVolume obj = new ObjVolume(en);
 			try
 			{
-				using (StreamReader reader = new StreamReader(new FileStream(filename, FileMode.Open, FileAccess.Read)))
+				using (StreamReader reader = new StreamReader(new FileStream(filename+".obj", FileMode.Open, FileAccess.Read)))
 				{
 					String file = reader.ReadToEnd();
 					String[] parts = file.Split(new string[]{"o "}, StringSplitOptions.None);
@@ -202,10 +275,9 @@ namespace Demax
 					{
 						if (line.StartsWith ("mtllib ")) {
 							String temp = line.Substring (7);
-							CLog.WriteLine("Model MTL: "+filename);
 							try
 							{
-								using (StreamReader reader2 = new StreamReader(new FileStream(Path.Combine(Path.GetDirectoryName(filename),temp), FileMode.Open, FileAccess.Read)))
+								using (StreamReader reader2 = new StreamReader(new FileStream(Path.Combine(Path.GetDirectoryName(filename + ".obj"),temp), FileMode.Open, FileAccess.Read)))
 								{
 									string content = reader2.ReadToEnd();
 
@@ -227,9 +299,8 @@ namespace Demax
 
 											texpath = mtemp;
 
-											obj.materials.Add(new Material(mname,Path.Combine(Path.GetDirectoryName(filename),texpath)));
-
-											CLog.WriteLine (mtemp);
+											obj.materials.Add(new Material(mname,Path.Combine(Path.GetDirectoryName(filename + ".obj"),texpath)));
+                                            
 										}
 									}
 								}
@@ -246,10 +317,10 @@ namespace Demax
 					}
 					for(int i=1; i<parts.Length;i++){
 						if(i==1)
-							obj.meshes.Add(LoadFromString(en, parts[i], filename, new Tuple<int, int, int>(0,0,0)));
+							obj.meshes.Add(LoadFromString(en, parts[i], filename + ".obj", new Tuple<int, int, int>(0,0,0)));
 						else{
 							var m = obj.meshes[obj.meshes.Count-1].maxIndex;
-							obj.meshes.Add(LoadFromString(en, parts[i], filename, new Tuple<int, int, int>(m.Item1,m.Item2,m.Item3)));
+							obj.meshes.Add(LoadFromString(en, parts[i], filename + ".obj", new Tuple<int, int, int>(m.Item1,m.Item2,m.Item3)));
 						}
 					}
 				}
@@ -516,12 +587,13 @@ namespace Demax
                     bool found = getSimilarVertexIndex(in_vertices[i], in_uvs[i], in_normals[i], ref out_vertices, ref out_uvs, ref out_normals, ref index);
 
                     if ( found ){ // A similar vertex is already in the VBO, use it instead !
-                            out_indices.Add( index );
+                        out_indices.Add( index );
+                        out_normals[index] = in_normals[i];    
                     }else{ // If not, it needs to be added in the output data.
-                            out_vertices.Add( in_vertices[i]);
-                            out_uvs     .Add( in_uvs[i]);
-                            out_normals .Add( in_normals[i]);
-                            out_indices .Add( (int)out_vertices.Count - 1 );
+                        out_vertices.Add( in_vertices[i]);
+                        out_uvs     .Add( in_uvs[i]);
+                        out_normals .Add( in_normals[i]);
+                        out_indices .Add( (int)out_vertices.Count - 1 );
                     }
             }
         }
@@ -560,5 +632,254 @@ namespace Demax
         {
             return Math.Abs(v1 - v2) < 0.01f;
         }
-	}
+
+        public static void ExportModelFolder(CEntity en, string dirname, string exportdir="", bool shareTexture=false, bool NoTextures=false)
+        {
+            DirectoryInfo dir = new DirectoryInfo(dirname);
+            int i = 1;
+            string texname = "";
+            foreach (var file in dir.GetFiles())
+            {
+                if (file.Extension == ".obj")
+                {
+                    if (exportdir != "")
+                        dirname = exportdir;
+
+                    if (i == 1)
+                        texname = Path.Combine(dirname, file.Name.Split('.')[0]);
+                    var o = LoadOBJ(en, file.FullName);
+                    
+                   
+                    if (NoTextures)
+                        o.ExportModel(Path.Combine(dirname, file.Name.Split('.')[0]), false);
+                    else if (shareTexture)
+                        o.ExportModel(Path.Combine(dirname, file.Name.Split('.')[0]), true, texname);
+                    else
+                        o.ExportModel(Path.Combine(dirname, file.Name.Split('.')[0]));
+                    CCore.GetCore().Renderer.volumes.Remove(dir.FullName);
+
+                    string z = (((float)i / (float)dir.GetFiles("*.obj").Length) * 100).ToString();
+
+                    CLog.Write("% " + z);
+
+                    i++;
+                }
+            }
+        }
+
+        public void ExportModel(string filename, bool exportTextures=true, string texname="")
+        {
+            BinaryWriter bw = new BinaryWriter(new FileStream(filename + ".mod", FileMode.Create));
+
+            // Model count
+            bw.Write(meshes.Count);
+
+            // Models
+
+            foreach (var m in meshes)
+            {
+                // Material to use
+                bw.Write(m.matuse.Keys.ElementAt(0));
+                bw.Write(m.matuse.Values.ElementAt(0));
+
+                // Verts count
+                bw.Write(m.VertCount);
+
+                // Vertices
+                foreach (var verts in m.vertices)
+                {
+                    bw.Write(verts.X);
+                    bw.Write(verts.Y);
+                    bw.Write(verts.Z);
+                }
+
+                // UVs count
+                bw.Write(m.texturecoords.Length);
+
+                // UVs
+                foreach (var uvs in m.texturecoords)
+                {
+                    bw.Write(uvs.X);
+                    bw.Write(uvs.Y);
+                }
+
+                // Normals count
+                bw.Write(m.NormalCount);
+
+                // Normals
+                foreach (var norms in m.normals)
+                {
+                    bw.Write(norms.X);
+                    bw.Write(norms.Y);
+                    bw.Write(norms.Z);
+                }
+
+                // Indice Count
+                bw.Write(m.IndiceCount);
+
+                // Indices
+                foreach (var i in m.indices)
+                {
+                    bw.Write(i);
+                }
+            }
+
+            if (exportTextures)
+            {
+                BinaryWriter texw = null;
+
+                if (texname == "")
+                {
+                    bw.Write(Path.GetFileNameWithoutExtension(filename) + ".tex");
+                    texw = new BinaryWriter(new FileStream(filename + ".tex", FileMode.Create));
+                }
+                else
+                {
+                    bw.Write(texname + ".tex");
+                    texw = new BinaryWriter(new FileStream(texname + ".tex", FileMode.Create));
+                }
+                texw.Write(materials.Count);
+                foreach (var mat in materials)
+                {
+                    var orig = new Bitmap(mat.filename);
+                    using (var ms = new MemoryStream())
+                    {
+                        orig.Save(ms, ImageFormat.Jpeg);
+                        texw.Write(mat.filename);
+                        texw.Write(mat.name);
+                        texw.Write(ms.Length);
+                        texw.Write(ms.ToArray());
+                    }
+                }
+
+                texw.Flush();
+                texw.Close();
+            }
+            
+            bw.Flush();
+            bw.Close();
+        }
+
+        public static ObjVolume ImportModel(CEntity e, string filename, bool ImportTextures=true, string texname = "")
+        {
+            if (CCore.GetCore().Renderer.volumes.ContainsKey(filename))
+                return (ObjVolume)CCore.GetCore().Renderer.volumes[filename].Clone();
+
+            ObjVolume v = new ObjVolume(e);
+
+
+            var br = new BinaryReader(new FileStream(filename+".mod", FileMode.Open));
+            int meshesCount = br.ReadInt32();
+
+            for (int i = 0; i < meshesCount; i++)
+            {
+                ObjVolume m = new ObjVolume(e);
+
+                m.matuse.Add(br.ReadInt32(), br.ReadString());
+                List<Vector3> verts = new List<Vector3>();
+                List<Vector3> norms = new List<Vector3>();
+                List<Vector2> uvs = new List<Vector2>();
+
+                // Verts
+                int vertcount = br.ReadInt32();
+                for (int j = 0; j < vertcount; j++)
+                {
+                    Vector3 vertex = new Vector3(br.ReadSingle(), br.ReadSingle(), br.ReadSingle());
+
+                    verts.Add(vertex);
+                }
+
+                // UVs
+                int texcoordcount = br.ReadInt32();
+                for (int j = 0; j < texcoordcount; j++)
+                {
+                    Vector2 uv = new Vector2(br.ReadSingle(), br.ReadSingle());
+
+                    uvs.Add(uv);
+                }
+
+                // Norms
+                int normcount = br.ReadInt32();
+                for (int j = 0; j < normcount; j++)
+                {
+                    Vector3 normal = new Vector3(br.ReadSingle(), br.ReadSingle(), br.ReadSingle());
+
+                    norms.Add(normal);
+                }
+
+                // Inds
+                int indcount = br.ReadInt32();
+                for (int j = 0; j < indcount; j++)
+                {
+                    int indice = br.ReadInt32();
+                    m.indices.Add(indice);
+                }
+
+                m.vertices = verts.ToArray();
+                m.normals = norms.ToArray();
+                m.texturecoords = uvs.ToArray();
+
+                v.meshes.Add(m);
+            }
+
+            if (ImportTextures)
+            {
+                br.ReadString(); // obsolete
+                BinaryReader texr = null;
+                if (texname == "")
+                    texr = new BinaryReader(new FileStream(filename.Split('.')[0] + ".tex", FileMode.Open));
+                else
+                {
+                    texr = new BinaryReader(new FileStream(texname + ".tex", FileMode.Open));
+                }
+
+                int materialcount = texr.ReadInt32();
+                for (int j = 0; j < materialcount; j++)
+                {
+                    string filenameTex = texr.ReadString();
+                    string matname = texr.ReadString();
+                    int imgsize = (int)texr.ReadInt64();
+                    byte[] imgdata = texr.ReadBytes(imgsize);
+                    Bitmap img;
+                    using (var ms = new MemoryStream(imgdata))
+                    {
+                        Image im = Image.FromStream(ms);
+                        img = new Bitmap(im);
+                    }
+
+                    Material mat = new Material(matname, filenameTex, img);
+                    v.materials.Add(mat);
+                }
+
+                texr.Close();
+            }
+            
+            br.Close();
+
+            if (!CCore.GetCore().Renderer.volumes.ContainsKey(filename))
+                CCore.GetCore().Renderer.volumes.Add(filename, v);
+
+            return v;
+        }
+
+        public void AddLOD(string filename, float dist, string type="mod")
+        {
+            if (CCore.GetCore().Renderer.volumes.ContainsKey(filename))
+            {
+                try {
+                    LOD.Add(dist, (ObjVolume)CCore.GetCore().Renderer.volumes[filename].Clone());
+                }
+                catch { }
+                return;
+            }
+
+
+            ObjVolume o = null;
+            if (type == "mod")
+                o = ImportModel(me, filename);
+            else if (type == "obj")
+                o = LoadOBJ(me, filename + ".obj");
+            LOD.Add(dist, o);
+        }
+    }
 }

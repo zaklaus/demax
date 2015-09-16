@@ -56,11 +56,12 @@ namespace Demax
         public GUIManager guiManager = new GUIManager();
         int framebuffer = 0;
 
-		bool updated, onDemand, loaded = false;
+		public bool updated, onDemand, loaded = false;
 		float time = 0f;
 		float deltaTime, lastTime = 0.0f;
 		float zeroKill = -100.0f;
 		Matrix4 viewmodel, projection = Matrix4.Identity;
+        int coloreduv = 0;
 		/// <summary>
 		/// Gets the time.
 		/// </summary>
@@ -91,6 +92,7 @@ namespace Demax
 		public Dictionary<string, CShaderProgram> shaders = new Dictionary<string, CShaderProgram>();
 		public Dictionary<string, int> textures = new Dictionary<string, int>();
         public Dictionary<string, ObjVolume> volumes = new Dictionary<string, ObjVolume>();
+        public Dictionary<string, List<ObjVolume>> animations = new Dictionary<string, List<ObjVolume>>();
         CShaderProgram quadProgram;
 		public string activeShader = "default";
         public string rttShader = "rtt";
@@ -121,6 +123,7 @@ namespace Demax
 
             shaders.Add("rtt", quadProgram);
 
+            coloreduv = Material.loadImage("default.jpg");
             //updateFB(gameRenderer.ClientSize.Width, gameRenderer.ClientSize.Height);
 		}
 
@@ -228,7 +231,7 @@ namespace Demax
 
                 verts.AddRange(v.GetVerts().ToList());
                 inds.AddRange(v.GetIndices().ToList());
-                colors.AddRange(v.GetColorData().ToList());
+                //colors.AddRange(v.GetColorData().ToList());
                 texcoords.AddRange(v.GetTextureCoords().ToList());
                 norms.AddRange(v.GetNormals().ToList());
                 vertcount += v.VertCount;
@@ -474,8 +477,11 @@ namespace Demax
 
                     foreach(var anim in v.anims)
                     {
-                        foreach(Volume f in anim.Value)
-                        { 
+                        foreach(var f in anim.Value)
+                        {
+                            /*f.Position = v.Position;
+                            f.Rotation = v.Rotation;
+                            f.Scale = v.Scale;*/
                             f.CalculateModelMatrix();
                             f.ViewProjectionMatrix = projection;
                             f.ViewModelMatrix = viewmodel;
@@ -660,12 +666,17 @@ namespace Demax
                 int tex = 0;
 
                 if (v.materials.Count == 0)
-                    tex = v.TextureID;
+                    tex = coloreduv;
                 else
                     foreach (var mat in v.materials)
                         if (mat.name == m.matuse[0])
                         {
                             tex = mat.TextureID;
+                            break;
+                        }
+                    else
+                        {
+                            tex = coloreduv;
                         }
 
                 // Sends our uniform matrices and binds our texture.
