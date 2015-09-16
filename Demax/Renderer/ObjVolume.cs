@@ -249,7 +249,7 @@ namespace Demax
             foreach(var file in dir.GetFiles())
             {
                 if(file.Extension == ".obj")
-                    a.Add(LoadOBJ(en, file.FullName));
+                    a.Add(LoadOBJ(en, file.FullName.Split('.')[0]));
             }
 
             return a.ToArray();
@@ -277,7 +277,7 @@ namespace Demax
 							String temp = line.Substring (7);
 							try
 							{
-								using (StreamReader reader2 = new StreamReader(new FileStream(Path.Combine(Path.GetDirectoryName(filename + ".obj"),temp), FileMode.Open, FileAccess.Read)))
+								using (StreamReader reader2 = new StreamReader(new FileStream(Path.Combine(Path.GetDirectoryName(filename + ".mtl"),temp), FileMode.Open, FileAccess.Read)))
 								{
 									string content = reader2.ReadToEnd();
 
@@ -299,7 +299,7 @@ namespace Demax
 
 											texpath = mtemp;
 
-											obj.materials.Add(new Material(mname,Path.Combine(Path.GetDirectoryName(filename + ".obj"),texpath)));
+											obj.materials.Add(new Material(mname,Path.Combine(Path.GetDirectoryName(filename),texpath)));
                                             
 										}
 									}
@@ -647,7 +647,7 @@ namespace Demax
 
                     if (i == 1)
                         texname = Path.Combine(dirname, file.Name.Split('.')[0]);
-                    var o = LoadOBJ(en, file.FullName);
+                    var o = LoadOBJ(en, file.FullName.Split('.')[0]);
                     
                    
                     if (NoTextures)
