@@ -235,15 +235,74 @@ namespace Demax
                     cframe++;
                     if (cframe >= anims[cname].Count)
                         cframe = 0;
+
+                    if (meshes.Count != 0)
+                        meshes[0] = anims[cname][cframe];
+                    else
+                        meshes.Add(anims[cname][cframe]);
+
                     return;
                 }
                 else
                 {
+                    // TODO: Implement basic interpolation...
+                    return;
+                    // Here we can interpolate points...
+                    //
+                    Volume next = null;
+                    if (cframe >= anims[cname].Count)
+                    {
+                        next = anims[cname][0];
+                    }
+                    else
+                        next = anims[cname][cframe];
+
+
+                    //based on time given for pause between frames and the distance between points
+                    //I need to somehow calculate the position of new points
+                    //ofc, I need to do the same for normals and texcoords, I guess. We'll see..
+
+                    Volume frame = new ObjVolume(me);
+                    List<Vector3> interpolatedVertices = new List<Vector3>(); // I love extremes..
+                    int i = 0; // We "don't trust" foreach ;p
+                    foreach (var vertex in next.meshes[0].vertices)
+                    {
+                        // Math gives me headache
+                        Vector3 pos = vertex;
+                        Vector3 dir = (anims[cname][cframe].meshes[0].vertices[i] - vertex).Normalized();
+
+                        //now simple math
+
+                        //well..
+
+                        Vector3 newVert = new Vector3(vertex * (dir));
+
+                        interpolatedVertices.Add(vertex);
+
+                        i++;
+                    }
+                    
+                    frame.vertices = interpolatedVertices.ToArray();
+                    frame.materials = materials;
+                    frame.normals = next.meshes[0].normals;
+                    frame.texturecoords = next.meshes[0].texturecoords;
+                    frame.indices = next.meshes[0].indices;
+                    frame.matuse = next.meshes[0].matuse;
+                    if (meshes.Count != 0)
+                        meshes[0] = frame;
+                    else
+                        meshes.Add(frame);
                     return;
                 }
+
             cframe++;
             if (cframe >= anims[cname].Count)
                 cframe = 0;
+
+            if (meshes.Count != 0)
+                meshes[0] = anims[cname][cframe];
+            else
+                meshes.Add(anims[cname][cframe]);
         }
 
         public void PlayAnim(string anim)
@@ -526,7 +585,7 @@ namespace Demax
 		/// <summary>
 		/// Adds the rigidbody.
 		/// </summary>
-		public abstract void AddRigidbody();
+		public abstract void AddRigidbody(string type="");
 
 
 		/// <summary>
@@ -541,6 +600,11 @@ namespace Demax
             }
             catch { }
 		}
+
+        public JVector JVec(Vector3 a)
+        {
+            return new JVector(a.X, a.Y, a.Z);
+        }
 
 		public void CalculateModelMatrix()
 		{ 

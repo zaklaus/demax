@@ -134,12 +134,14 @@ namespace Demax
             m_engine.Execute("import clr", m_scope);
             m_engine.Execute("clr.AddReference(\"Demax\")", m_scope);
             m_engine.Execute("clr.AddReference(\"OpenTK\")", m_scope);
+            m_engine.Execute("clr.AddReference(\"Jitter\")", m_scope);
             m_engine.Execute("clr.AddReference(\"System\")", m_scope);
             m_engine.Execute("clr.AddReference(\"System.IO\")", m_scope);
             m_engine.Execute("from Demax import *", m_scope);
             m_engine.Execute("from System import *", m_scope);
             m_engine.Execute("from System.IO import *", m_scope);
             m_engine.Execute("from OpenTK import *", m_scope);
+            m_engine.Execute("from Jitter import *", m_scope);
             src = m_engine.CreateScriptSourceFromFile(filename);
 
             // Executes our script and calls our OnStart event.

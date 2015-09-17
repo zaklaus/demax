@@ -90,7 +90,8 @@ namespace Demax
 		}
 
 		public Dictionary<string, CShaderProgram> shaders = new Dictionary<string, CShaderProgram>();
-		public Dictionary<string, int> textures = new Dictionary<string, int>();
+        public Dictionary<string, CShaderProgram> rttShaders = new Dictionary<string, CShaderProgram>();
+        public Dictionary<string, int> textures = new Dictionary<string, int>();
         public Dictionary<string, ObjVolume> volumes = new Dictionary<string, ObjVolume>();
         public Dictionary<string, List<ObjVolume>> animations = new Dictionary<string, List<ObjVolume>>();
         CShaderProgram quadProgram;
@@ -120,12 +121,22 @@ namespace Demax
             rttShader = "rtt";
             rtexID = quadProgram.GetUniform("renderedTexture");
             rtimeID = quadProgram.GetUniform("time");
-
-            shaders.Add("rtt", quadProgram);
-
+            
+            rttShaders.Add("rtt", quadProgram);
+            
             coloreduv = Material.loadImage("default.jpg");
             //updateFB(gameRenderer.ClientSize.Width, gameRenderer.ClientSize.Height);
 		}
+
+        /// <summary>
+        /// Appends new Render to Texture shader to the list.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="shadername"></param>
+        public void AddRTTShader(string name, string shadername)
+        {
+            rttShaders.Add(name, new CShaderProgram(DefaultShader.passthrough, shadername, false, true));
+        }
 
         void updateFB(int w, int h)
         {
@@ -549,17 +560,46 @@ namespace Demax
                     {
                         v.TickAnim();
 
-                        indiceat = render(v.anims[v.cname][v.cframe], indiceat);
+                        //d
+                        if (v.meshes.Count != 0)
+                        indiceat = render(v.meshes[0], indiceat);
                     }
                 }
             }
             
             #endregion
 
+
+            // Do post processing
+            foreach (var rtt in rttShaders.Values)
+            {
+                //GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+                GL.Viewport(0, 0, gameRenderer.ClientSize.Width, gameRenderer.ClientSize.Height);
+                GL.UseProgram(rtt.ProgramID);
+                //GL.ActiveTexture(TextureUnit.Texture0);
+                GL.BindTexture(TextureTarget.Texture2D, fbTexture);
+                GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+                GL.Uniform1(rtexID, 0);
+                GL.Uniform1(rtimeID, (float)(DateTime.Now.Millisecond * 10.0f));
+                GL.EnableVertexAttribArray(0);
+                GL.BindBuffer(BufferTarget.ArrayBuffer, quadB);
+                GL.VertexAttribPointer(
+                    0,
+                    3,
+                    VertexAttribPointerType.Float,
+                    false,
+                    0,
+                    0
+                    );
+                GL.DrawArrays(PrimitiveType.Triangles, 0, 6);
+                GL.DisableVertexAttribArray(0);
+            }
+
+
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             GL.Viewport(0, 0, gameRenderer.ClientSize.Width, gameRenderer.ClientSize.Height);
-            GL.UseProgram(shaders[rttShader].ProgramID);
+            GL.UseProgram(rttShaders["rtt"].ProgramID);
             //GL.ActiveTexture(TextureUnit.Texture0);
             GL.BindTexture(TextureTarget.Texture2D, fbTexture);
             GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
@@ -577,11 +617,12 @@ namespace Demax
                 );
             GL.DrawArrays(PrimitiveType.Triangles, 0, 6);
             GL.DisableVertexAttribArray(0);
-            
+
+
 
             //guiManager.Draw();
 
-			gameRenderer.SwapBuffers();
+            gameRenderer.SwapBuffers();
 
 
 

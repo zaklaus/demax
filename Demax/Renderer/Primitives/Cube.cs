@@ -80,7 +80,7 @@ namespace Demax
 			return new Vector2[]{};
 		}
 
-		public override void AddRigidbody()
+		public override void AddRigidbody(string type = "")
 		{
             var z = new RigidBody(new Jitter.Collision.Shapes.BoxShape(Scale.X, Scale.Y, Scale.Z));
             body.Add(z);

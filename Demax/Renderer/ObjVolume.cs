@@ -109,28 +109,36 @@ namespace Demax
 			return normals;
 		}
 
-		public override void AddRigidbody()
+		public override void AddRigidbody(string type = "")
 		{
-            foreach (var x in meshes)
-            {
-                List<TriangleVertexIndices> f = new List<TriangleVertexIndices>();
-                for (int i = 0; i < x.indices.Count; i += 3)
+            if (type == "")
+                foreach (var x in meshes)
                 {
-                    f.Add(new TriangleVertexIndices(x.indices[i], x.indices[i+1], x.indices[i + 2]));
-                }
-                List<JVector> verts = new List<Jitter.LinearMath.JVector>();
-                foreach (var vertex in x.vertices)
-                {
-                    verts.Add(new JVector(vertex.X, vertex.Y, vertex.Z));
-                }
+                    List<TriangleVertexIndices> f = new List<TriangleVertexIndices>();
+                    for (int i = 0; i < x.indices.Count; i += 3)
+                    {
+                        f.Add(new TriangleVertexIndices(x.indices[i], x.indices[i + 1], x.indices[i + 2]));
+                    }
+                    List<JVector> verts = new List<Jitter.LinearMath.JVector>();
+                    foreach (var vertex in x.vertices)
+                    {
+                        verts.Add(new JVector(vertex.X, vertex.Y, vertex.Z));
+                    }
 
-                Jitter.Collision.Shapes.TriangleMeshShape t = new Jitter.Collision.Shapes.TriangleMeshShape(new Octree(verts, f));
-                
-                var z = new RigidBody(t);
+                    Jitter.Collision.Shapes.TriangleMeshShape t = new Jitter.Collision.Shapes.TriangleMeshShape(new Octree(verts, f));
+
+                    var z = new RigidBody(t);
+                    body.Add(z);
+                    z.Position = new JVector(Position.X, Position.Y, Position.Z);
+
+                    //body.Orientation = (JVector)Rotation;
+                    CCore.GetCore().world.AddBody(z);
+                }
+            else if (type=="box")
+            {
+                var z = new RigidBody(new Jitter.Collision.Shapes.BoxShape(Scale.X, Scale.Y, Scale.Z));
                 body.Add(z);
                 z.Position = new JVector(Position.X, Position.Y, Position.Z);
-
-                //body.Orientation = (JVector)Rotation;
                 CCore.GetCore().world.AddBody(z);
             }
 		}
@@ -254,6 +262,7 @@ namespace Demax
 
             return a.ToArray();
         }
+
 
 		public static ObjVolume LoadOBJ(CEntity en, string filename)
 		{
