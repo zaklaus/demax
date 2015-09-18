@@ -188,6 +188,7 @@ namespace Demax
         public Dictionary<float, Volume> LOD = new Dictionary<float, Volume>();
         public Vector3 BBoxMin;
         public Vector3 BBoxMax;
+        public Volume frame;
 
         public Dictionary<string, List<Volume>> anims = new Dictionary<string, List<Volume>>();
         public int cframe = 0;
@@ -234,19 +235,24 @@ namespace Demax
                     frameTime = DateTime.Now;
                     cframe++;
                     if (cframe >= anims[cname].Count)
+                    {
                         cframe = 0;
+                        frame = new ObjVolume(me);
+                    }
 
-                    if (meshes.Count != 0)
+                    /*if (meshes.Count != 0)
                         meshes[0] = anims[cname][cframe];
                     else
-                        meshes.Add(anims[cname][cframe]);
+                        meshes.Add(anims[cname][cframe]);*/
 
                     return;
                 }
                 else
                 {
+                    if (frame == null)
+                        frame = new ObjVolume(me);
                     // TODO: Implement basic interpolation...
-                    return;
+                   // return;
                     // Here we can interpolate points...
                     //
                     Volume next = null;
@@ -256,45 +262,52 @@ namespace Demax
                     }
                     else
                         next = anims[cname][cframe];
-
-
-                    //based on time given for pause between frames and the distance between points
-                    //I need to somehow calculate the position of new points
-                    //ofc, I need to do the same for normals and texcoords, I guess. We'll see..
-
-                    Volume frame = new ObjVolume(me);
-                    List<Vector3> interpolatedVertices = new List<Vector3>(); // I love extremes..
                     int i = 0; // We "don't trust" foreach ;p
-                    foreach (var vertex in next.meshes[0].vertices)
+                    int j = 0;
+                    foreach (var mesh in next.meshes)
                     {
-                        // Math gives me headache
-                        Vector3 pos = vertex;
-                        Vector3 dir = (anims[cname][cframe].meshes[0].vertices[i] - vertex).Normalized();
+                        if (frame.meshes.Count <= j)
+                            frame.meshes.Add(new ObjVolume(me));
 
-                        //now simple math
+                        if (frame.meshes[j].vertices == null)
+                            frame.meshes[j].vertices = anims[cname][cframe].meshes[j].vertices.ToArray();
 
-                        //well..
+                        i = 0;
+                        List<Vector3> interpolatedVertices = new List<Vector3>(); // I love extremes..
+                        foreach (var vertex in mesh.vertices)
+                        {
+                            Vector3 dir = (frame.meshes[j].vertices[i] - vertex);
 
-                        Vector3 newVert = new Vector3(vertex * (dir));
+                            //now simple math
 
-                        interpolatedVertices.Add(vertex);
+                            //well..
+                            float dist = Extensions.GetDistance3D(frame.meshes[j].vertices[i], vertex);
+                            Vector3 newVert = new Vector3((frame.meshes[j].vertices[i] - dir * (dist/2)));
 
-                        i++;
+                            interpolatedVertices.Add(newVert);
+
+                            i++;
+                        }
+
+                        frame.meshes[j].vertices = interpolatedVertices.ToArray();
+                        frame.meshes[j].normals = mesh.normals;
+                        frame.meshes[j].texturecoords = mesh.texturecoords;
+                        frame.meshes[j].indices = mesh.indices;
+                        frame.meshes[j].matuse = mesh.matuse;
+                        
+                        
+                        j++;
                     }
-                    
-                    frame.vertices = interpolatedVertices.ToArray();
-                    frame.materials = materials;
-                    frame.normals = next.meshes[0].normals;
-                    frame.texturecoords = next.meshes[0].texturecoords;
-                    frame.indices = next.meshes[0].indices;
-                    frame.matuse = next.meshes[0].matuse;
+                    frame.materials = next.materials;
+                    frame.Position = next.Position;
+
+
                     if (meshes.Count != 0)
                         meshes[0] = frame;
                     else
                         meshes.Add(frame);
                     return;
                 }
-
             cframe++;
             if (cframe >= anims[cname].Count)
                 cframe = 0;

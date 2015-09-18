@@ -108,7 +108,7 @@ namespace Demax
 		/// <summary>
 		/// Inits the test.
 		/// </summary>
-		void initTest()
+		void AllocateBuffers()
 		{
 			GL.GenBuffers(1, out ibo_elements);
             GL.GenFramebuffers(1, out framebuffer);
@@ -216,7 +216,7 @@ namespace Demax
         /// Updates our matrices for every existing volume.
         /// </summary>
         /// <param name="v"></param>
-		void updateTest(Volume v)
+		void UpdateBuffers(Volume v)
 		{
             // Halts if volume is invisible.
             if (!v.isVisible)
@@ -305,7 +305,7 @@ namespace Demax
 		/// </summary>
 		public void Flush(Volume e)
 		{
-			updateTest (e);
+			UpdateBuffers (e);
 		}
 
 		/// <summary>
@@ -368,28 +368,9 @@ namespace Demax
 			GL.Enable (EnableCap.DepthTest);
 			GL.Enable (EnableCap.CullFace);
 
-			Dictionary<string, bool> extensions =
-				new Dictionary<string, bool>();
-			int count = GL.GetInteger(GetPName.NumExtensions);
-			for (int i = 0; i < count; i++)
-			{
-				string extension = GL.GetString(StringNameIndexed.Extensions, i);
-				extensions.Add(extension, true);
-			}
-
-            // Is this compatible GPU?
-            //
-			if (extensions.ContainsKey("ARB_fragment_program"))
-			{
-				CLog.WriteLine("Sorry, Your GPU is not supported!");
-				core.GameRenderer.Close ();
-				Console.ReadKey();
-				return;
-			}
-
             // Further initialization
             //
-			initTest ();
+			AllocateBuffers ();
             //updateFB(gameRenderer.ClientRectangle.Width, gameRenderer.ClientRectangle.Height);
 			loaded = true;
 		}
@@ -486,18 +467,17 @@ namespace Demax
 					v.ViewModelMatrix = viewmodel;
 					v.ModelViewProjectionMatrix = v.ModelMatrix * v.ViewModelMatrix * v.ViewProjectionMatrix;
 
-                    foreach(var anim in v.anims)
+                    if (v.anims.Count != 0 && v.cname != "")
                     {
-                        foreach(var f in anim.Value)
-                        {
-                            /*f.Position = v.Position;
-                            f.Rotation = v.Rotation;
-                            f.Scale = v.Scale;*/
-                            f.CalculateModelMatrix();
-                            f.ViewProjectionMatrix = projection;
-                            f.ViewModelMatrix = viewmodel;
-                            f.ModelViewProjectionMatrix = f.ModelMatrix * f.ViewModelMatrix * f.ViewProjectionMatrix;
+                        try {
+                            v.TickAnim();
+
+                            v.meshes[0].CalculateModelMatrix();
+                            v.meshes[0].ViewProjectionMatrix = projection;
+                            v.meshes[0].ViewModelMatrix = viewmodel;
+                            v.meshes[0].ModelViewProjectionMatrix = v.meshes[0].ModelMatrix * v.meshes[0].ViewModelMatrix * v.meshes[0].ViewProjectionMatrix;
                         }
+                        catch { }
                     }
                 }
 			}
@@ -558,11 +538,8 @@ namespace Demax
                         indiceat = render(v, indiceat);
                     else
                     {
-                        v.TickAnim();
-
-                        //d
                         if (v.meshes.Count != 0)
-                        indiceat = render(v.meshes[0], indiceat);
+                            indiceat = render(v.meshes[0], indiceat);
                     }
                 }
             }
@@ -698,11 +675,11 @@ namespace Demax
                 shaders[CShaderProgram.LoadShaderPointer(m.Shader)].EnableVertexAttribArrays();
 
                 try {
-                    updateTest(ma.meshes[i]);
+                    UpdateBuffers(ma.meshes[i]);
                 }
                 catch
                 {
-                    updateTest(m);
+                    UpdateBuffers(m);
                 }
                 int tex = 0;
 

@@ -569,7 +569,7 @@ namespace Demax
             List<Vector3> new_vertices = new List<Vector3>();
             List<Vector3> new_normals = new List<Vector3>();
             List<Vector2> new_uvs = new List<Vector2>();
-            vol.indexVBO(temp_vertices, temp_uv, temp_normals, ref vol.indices, ref new_vertices, ref new_uvs, ref new_normals);
+            indexVBO(temp_vertices, temp_uv, temp_normals, ref vol.indices, ref new_vertices, ref new_uvs, ref new_normals);
             vol.vertices = new_vertices.ToArray();
             vol.normals = new_normals.ToArray();
             vol.colors = colors.ToArray();
@@ -578,7 +578,7 @@ namespace Demax
 			return vol;
 		}
 
-        void indexVBO(
+        public static void indexVBO(
             List<Vector3> in_vertices,
             List<Vector2> in_uvs,
             List<Vector3> in_normals,
@@ -606,7 +606,7 @@ namespace Demax
                     }
             }
         }
-        bool getSimilarVertexIndex( 
+        static bool getSimilarVertexIndex( 
             Vector3 in_vertex, 
             Vector2 in_uv, 
             Vector3 in_normal, 
@@ -637,7 +637,7 @@ namespace Demax
             return false;
         }
 
-        bool is_near(float v1, float v2)
+        static bool is_near(float v1, float v2)
         {
             return Math.Abs(v1 - v2) < 0.01f;
         }
